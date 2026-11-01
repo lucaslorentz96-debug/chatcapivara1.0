@@ -461,6 +461,14 @@ async function boot() {
     const st = await api('state');
     S.st = st;
     S.autos = st.automations;
+    const qp = new URLSearchParams(location.search);
+    if (qp.has('connected') || qp.has('oauth_error')) {
+      history.replaceState(null, '', '/admin' + (location.hash || '#settings'));
+      setTimeout(() => {
+        if (qp.has('connected')) toast('Instagram conectado ✅' + (qp.get('sub') === '0' ? ' (veja o aviso no Registro)' : ''), 'ok');
+        else modal(`<h2>Não deu certo 😕</h2><p>${esc(qp.get('oauth_error'))}</p><div class="modal-foot"><span class="spacer"></span><button class="primary" data-close>Ok</button></div>`);
+      }, 300);
+    }
     route();
   } catch (e) {
     if (e.message !== 'auth' && e.message !== 'setup') app.innerHTML = `<div class="login"><div class="card"><h2>Ops!</h2><p>${esc(e.message)}</p><button onclick="location.reload()">Tentar de novo</button></div></div>`;
@@ -996,15 +1004,28 @@ function renderSettings() {
     <h2>1. Conectar o Instagram</h2>
     ${acc ? `<div class="acc-card">${acc.picture ? `<img src="${esc(acc.picture)}" alt="">` : ''}<div style="flex:1"><b>@${esc(acc.username)}</b><div class="hint">${esc(acc.name || '')} · ID ${esc(acc.id)}</div>
         ${acc.mode === 'fb'
-          ? `<div class="hint">Conectado pelo Facebook · Página "${esc(acc.page_name)}" · ${acc.token_expires_at === 0 ? 'token permanente ✅' : acc.token_expires_at ? '⚠️ token expira em ' + fmtDate(acc.token_expires_at) : 'validade do token desconhecida'}</div>`
+          ? `<div class="hint">${acc.unified ? 'Conectado pelo login unificado da Meta' : 'Conectado pelo Facebook · Página "' + esc(acc.page_name) + '"'} · ${acc.token_expires_at === 0 ? 'token permanente ✅' : acc.token_expires_at ? '⚠️ token expira em ' + fmtDate(acc.token_expires_at) : 'validade do token desconhecida'}</div>`
           : `<div class="hint">Token atualizado ${tokenDays === null ? '—' : tokenDays === 0 ? 'hoje' : 'há ' + tokenDays + ' dia(s)'} · renova sozinho antes de vencer</div>`}</div></div>
       <div class="row" style="margin-top:12px">${acc.mode === 'fb' ? '' : '<button data-act="refresh-token">↻ Renovar token agora</button>'}<button data-act="resubscribe">↻ Assinar eventos de novo</button><button class="ghost danger" data-act="disconnect">Desconectar</button></div>
-      <details style="margin-top:14px"><summary class="hint" style="cursor:pointer">Trocar de token / conta</summary>` : `<p class="hint">Gere o token no painel da Meta (<b>Configuração da API com login do Facebook → Gerar tokens de acesso</b>, ou no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">Explorador da Graph API</a>) e cole aqui. Aceita token do Facebook (começa com <code>EAA</code>) ou do Instagram (começa com <code>IG</code>).</p>`}
-    <label class="lbl">Token de acesso</label>
-    <textarea id="tok" rows="3" placeholder="Cole aqui o token (EAA… ou IG…)"></textarea>
-    <label class="lbl">Chave secreta do aplicativo <span class="hint">(Configurações do app → Básico → Chave secreta do aplicativo)</span></label>
-    <input type="password" id="tok-secret" placeholder="Recomendado: deixa o token permanente e protege o webhook" autocomplete="off">
-    <button class="primary" data-act="connect" style="margin-top:10px">Conectar</button>
+      <details style="margin-top:14px"><summary class="hint" style="cursor:pointer">Trocar de conta / conectar de novo</summary>` : ''}
+    <label class="lbl">Chave secreta do aplicativo <span class="hint">(na Meta: Configurações do app → Básico → Chave secreta do aplicativo → Mostrar)</span></label>
+    <input type="password" id="tok-secret" placeholder="${st.app_secret_set ? '•••••••• (já salva — só cole se quiser trocar)' : 'Cole a chave secreta aqui'}" autocomplete="off">
+    <div class="grid2" style="align-items:start;margin-top:14px">
+      <div class="card" style="box-shadow:none;margin:0">
+        <h3>Opção A · Conectar com a Meta</h3>
+        <p class="hint">Para apps novos (login unificado). Na Meta, em <b>1. Configure seu app</b>: crie a configuração e salve este <b>URL de redirecionamento</b>:</p>
+        ${copyField('oa-redirect', st.oauth_redirect_url)}
+        <label class="lbl">URL de login <span class="hint">(aparece na Meta depois de salvar o URL acima)</span></label>
+        <input id="oa-url" placeholder="https://www.facebook.com/…" value="${esc(st.oauth_login_url || '')}">
+        <button class="primary" data-act="oauth" style="margin-top:10px">Conectar com a Meta</button>
+      </div>
+      <div class="card" style="box-shadow:none;margin:0">
+        <h3>Opção B · Colar um token</h3>
+        <p class="hint">Token gerado na Meta (passo <b>Gerar tokens de acesso</b>) ou no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">Explorador da Graph API</a>. Aceita <code>EAA…</code> ou <code>IG…</code>.</p>
+        <textarea id="tok" rows="3" placeholder="Cole aqui o token"></textarea>
+        <button class="primary" data-act="connect" style="margin-top:10px">Conectar</button>
+      </div>
+    </div>
     ${acc ? '</details>' : ''}
   </section>
 
@@ -1158,6 +1179,19 @@ const ACT = {
       if (e.message !== 'auth') toast(e.message, 'err');
       el.disabled = false;
       el.textContent = 'Conectar';
+    }
+  },
+  async oauth(el) {
+    const login_url = $('#oa-url').value.trim();
+    const secret = $('#tok-secret').value.trim();
+    if (!login_url) return toast('Cole o URL de login que aparece na Meta.', 'err');
+    el.disabled = true;
+    try {
+      const r = await api('oauth/start', { method: 'POST', body: { login_url, secret } });
+      location.href = r.url;
+    } catch (e) {
+      if (e.message !== 'auth') toast(e.message, 'err');
+      el.disabled = false;
     }
   },
   async disconnect() {

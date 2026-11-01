@@ -51,6 +51,7 @@ async function route(request, env, ctx) {
   if (path === '/admin') return html(PANEL_HTML);
   if (path.startsWith('/media/') && (method === 'GET' || method === 'HEAD')) return serveMedia(path.slice(7), env);
   if (path === '/privacidade' || path === '/exclusao') return legalPage(path, env);
+  if (path === '/oauth/callback') return oauthCallback(env, url);
 
   if (path === '/webhook') {
     if (!env.DB) return text('Banco D1 não configurado (binding DB).', 500);
@@ -384,7 +385,7 @@ async function loadAutomations(env) {
 async function ig(s, method, path, params = {}, body) {
   const u = new URL(path.startsWith('http') ? path : (s.api_mode === 'fb' ? FB_GRAPH : GRAPH) + path);
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== '') u.searchParams.set(k, v);
-  u.searchParams.set('access_token', s.ig_token || '');
+  if (s.ig_token) u.searchParams.set('access_token', s.ig_token);
   const init = { method, headers: {} };
   if (body) {
     init.headers['content-type'] = 'application/json';
@@ -416,6 +417,7 @@ function explain(r) {
   const m = String(r.error || '').toLowerCase();
   if (r.code === 190) hint = ' → token expirado ou inválido: gere um novo na Meta e conecte de novo em Configurações.';
   else if (r.sub === 2534022 || m.includes('window') || m.includes('janela')) hint = ' → fora da janela de 24h (a pessoa precisa interagir de novo).';
+  else if (r.code === 100 && r.sub === 33) hint = ' → a conta do Instagram não está liberada para este app/token (no login unificado: confira se a conta foi escolhida no login e se a configuração tem as permissões certas).';
   else if (r.code === 10 || r.code === 200 || m.includes('permission')) hint = ' → falta permissão no app da Meta ou "Permitir acesso às mensagens" está desligado no Instagram.';
   else if (r.code === 551 || m.includes('not available')) hint = ' → essa pessoa não pode receber mensagens agora.';
   else if (r.code === 4 || r.code === 613 || m.includes('limit')) hint = ' → limite de envio da Meta atingido, tente mais tarde.';
@@ -423,8 +425,8 @@ function explain(r) {
 }
 const isWindowError = (r) => r && (r.sub === 2534022 || /window/i.test(r.error || ''));
 
-// No login do Facebook as mensagens saem pela Página; no login do Instagram, pela própria conta.
-const messagesPath = (s) => '/' + (s.api_mode === 'fb' ? s.fb_page_id : s.ig_user_id || 'me') + '/messages';
+// Login do Facebook clássico: mensagens saem pela Página. Login do Instagram / unificado: pela própria conta.
+const messagesPath = (s) => '/' + (s.api_mode === 'fb' && s.fb_page_id ? s.fb_page_id : s.ig_user_id || 'me') + '/messages';
 function sendMessage(s, recipient, message) {
   return ig(s, 'POST', messagesPath(s), {}, { recipient, message });
 }
@@ -433,9 +435,10 @@ function senderAction(s, id, action) {
 }
 
 async function subscribeWebhooks(s) {
-  const fb = s.api_mode === 'fb';
+  const fb = s.api_mode === 'fb' && !!s.fb_page_id; // via Página
+  const unified = s.api_mode === 'fb' && !s.fb_page_id; // login unificado (sem Página)
   const tries = fb ? FB_PAGE_FIELDS : [SUBSCRIBE_FIELDS, ['comments', 'messages', 'messaging_postbacks'], ['comments', 'messages']];
-  const path = fb ? '/' + s.fb_page_id + '/subscribed_apps' : '/me/subscribed_apps';
+  const path = fb ? '/' + s.fb_page_id + '/subscribed_apps' : unified ? '/' + s.ig_user_id + '/subscribed_apps' : '/me/subscribed_apps';
   let last;
   for (const f of tries) {
     const r = await ig(s, 'POST', path, { subscribed_fields: f.join(',') });
@@ -443,6 +446,7 @@ async function subscribeWebhooks(s) {
     last = r;
   }
   if (fb) return { ok: false, manual: true, error: 'O bot não conseguiu se inscrever sozinho na Página (falta a permissão pages_manage_metadata, e tudo bem). Faça isso na Meta: em "Configuração da API com login do Facebook", no passo de tokens/webhooks, ative a "Assinatura do webhook" da sua Página. Detalhe técnico: ' + explain(last) };
+  if (unified) return { ok: false, manual: true, error: 'O bot não conseguiu inscrever a conta sozinho (pode ser normal no login unificado). Confira na Meta, em "3. Configurar webhooks", se os campos comments, messages, messaging_postbacks e messaging_referral estão assinados. Detalhe técnico: ' + explain(last) };
   return { ok: false, error: explain(last) };
 }
 
@@ -457,8 +461,9 @@ async function connectFacebook(s, token, secret) {
   let pages = [];
   let acc = await pageList(token);
   if (acc.ok) {
-    // Token de usuário: troca por um de longa duração para que o token da Página não expire.
-    if (secret) {
+    // Token de usuário com Páginas: troca por um de longa duração para que o token da Página não expire.
+    const hasPages = (acc.data.data || []).some((p) => p.instagram_business_account);
+    if (secret && hasPages) {
       const app = await ig(t, 'GET', '/app', { fields: 'id' });
       const ex = app.ok && app.data.id
         ? await ig(t, 'GET', '/oauth/access_token', { grant_type: 'fb_exchange_token', client_id: app.data.id, client_secret: secret, fb_exchange_token: token })
@@ -475,9 +480,52 @@ async function connectFacebook(s, token, secret) {
     if (pg.ok && pg.data.instagram_business_account) pages = [{ id: pg.data.id, name: pg.data.name, access_token: token, instagram_business_account: pg.data.instagram_business_account }];
   }
   if (!pages.length) {
+    // Login unificado / usuário do sistema: o token dá acesso direto à conta do Instagram, sem Página.
+    const dbg0 = await ig(t, 'GET', '/debug_token', { input_token: token });
+    const d0 = dbg0.ok && dbg0.data && dbg0.data.data ? dbg0.data.data : {};
+    const ids = [...new Set((d0.granular_scopes || []).filter((g) => /^instagram/.test(g.scope || '')).flatMap((g) => g.target_ids || []))];
+    if (!ids.length) {
+      const asg = await ig(t, 'GET', '/me/assigned_instagram_accounts', { fields: 'id' });
+      if (asg.ok) for (const x of asg.data.data || []) if (x && x.id) ids.push(String(x.id));
+    }
+    let direct = null;
+    let lastErr = null;
+    for (const id of ids) {
+      const a = await ig(t, 'GET', '/' + id, { fields: 'id,username,name,profile_picture_url' });
+      if (a.ok && a.data && a.data.id) {
+        if (!direct || String(a.data.username || '').toLowerCase() === String(s.ig_username || '').toLowerCase()) direct = a.data;
+      } else lastErr = a;
+    }
+    if (direct) {
+      if (Array.isArray(d0.scopes)) {
+        const missing = FB_REQUIRED_SCOPES.filter((x) => !d0.scopes.includes(x));
+        if (missing.length) notes.push('Faltam permissões no token: ' + missing.join(', ') + '. Adicione na configuração do app e conecte de novo.');
+      }
+      if (d0.expires_at) notes.push('Este token expira em ' + new Date(d0.expires_at * 1000).toLocaleDateString('pt-BR') + '.');
+      return {
+        ok: true,
+        notes,
+        settings: {
+          api_mode: 'fb',
+          ig_token: token,
+          ig_user_id: String(direct.id),
+          ig_app_scoped_id: '',
+          ig_username: direct.username || '',
+          ig_name: direct.name || '',
+          ig_picture: direct.profile_picture_url || '',
+          fb_page_id: null,
+          fb_page_name: null,
+          token_updated_at: now(),
+          token_expires_at: d0.expires_at ? d0.expires_at * 1000 : dbg0.ok ? 0 : '',
+          token_refresh_tried: null,
+        },
+      };
+    }
     return {
       error:
-        'Não encontrei nenhuma Página do Facebook com uma conta profissional do Instagram ligada a ela, para esse token. Confira: (1) seu Instagram está conectado a uma Página do Facebook; (2) ao gerar o token, você marcou essa Página e a conta do Instagram; (3) as permissões pages_show_list e instagram_basic foram concedidas.',
+        'Não encontrei a sua conta do Instagram nesse token.' +
+        (lastErr ? ' A Meta respondeu: ' + explain(lastErr) : '') +
+        ' Confira: (1) ao fazer login/gerar o token você escolheu a sua conta do Instagram (e a Página, se pedir); (2) as permissões instagram_basic, instagram_manage_messages e instagram_manage_comments estão na configuração.',
     };
   }
   const want = String(s.ig_username || '').toLowerCase();
@@ -948,6 +996,44 @@ async function legalPage(path, env) {
 }
 
 // ---------------------------------------------------------------------------
+// Conexão: finalização comum e login pela Meta (OAuth)
+// ---------------------------------------------------------------------------
+async function finishConnect(env, upd, notes) {
+  await setSettings(env, upd);
+  const s2 = await getSettings(env);
+  const sub = await subscribeWebhooks(s2);
+  const via = s2.api_mode === 'fb' ? (s2.fb_page_id ? ` (via Página do Facebook "${s2.fb_page_name}")` : ' (login unificado da Meta)') : '';
+  const details = [sub.ok ? 'Eventos assinados: ' + sub.fields.join(', ') : sub.error, ...notes].join(' | ');
+  await log(env, sub.ok && !notes.length ? 'ok' : 'aviso', `Instagram conectado: @${s2.ig_username}${via}`, details);
+  return { ok: true, account: accountInfo(s2), subscribe: sub, notes };
+}
+
+async function oauthCallback(env, url) {
+  if (!env.DB) return text('Banco D1 não configurado (binding DB).', 500);
+  await ensureSchema(env);
+  const s = await getSettings(env);
+  const back = (q) => Response.redirect(url.origin + '/admin?' + q + '#settings', 302);
+  const fail = async (msg) => {
+    await log(env, 'erro', 'Conexão pelo login da Meta falhou: ' + msg);
+    return back('oauth_error=' + encodeURIComponent(msg));
+  };
+  const metaErr = url.searchParams.get('error_description') || url.searchParams.get('error_message') || url.searchParams.get('error_reason') || url.searchParams.get('error');
+  if (metaErr) return fail('a Meta respondeu: ' + metaErr);
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state') || '';
+  const [st, ts] = String(s.oauth_state || '').split(':');
+  if (!code || !st || !safeEqual(state, st) || now() - Number(ts) > 30 * 60e3) return fail('link de login inválido ou expirado. Clique em "Conectar com a Meta" de novo no painel.');
+  await setSettings(env, { oauth_state: null });
+  if (!s.app_secret || !s.oauth_app_id) return fail('falta a chave secreta do aplicativo. Cole ela no painel e tente de novo.');
+  const ex = await ig({ api_mode: 'fb' }, 'GET', '/oauth/access_token', { client_id: s.oauth_app_id, client_secret: s.app_secret, redirect_uri: url.origin + '/oauth/callback', code });
+  if (!ex.ok || !ex.data.access_token) return fail('a Meta não liberou o token: ' + explain(ex) + ' (confira a chave secreta e se o URL de redirecionamento foi salvo na Meta).');
+  const fb = await connectFacebook(s, ex.data.access_token, s.app_secret);
+  if (!fb.ok) return fail(fb.error);
+  const res = await finishConnect(env, fb.settings, fb.notes);
+  return back('connected=1' + (res.subscribe.ok ? '' : '&sub=0'));
+}
+
+// ---------------------------------------------------------------------------
 // API do painel
 // ---------------------------------------------------------------------------
 // A senha pode vir do segredo ADMIN_PASSWORD (Cloudflare) ou ser criada no primeiro acesso ao painel.
@@ -992,6 +1078,7 @@ function accountInfo(s) {
     token_updated_at: Number(s.token_updated_at || 0),
     mode: s.api_mode === 'fb' ? 'fb' : 'ig',
     page_name: s.fb_page_name || '',
+    unified: s.api_mode === 'fb' && !s.fb_page_id,
     token_expires_at: s.token_expires_at === '' || s.token_expires_at === undefined ? null : Number(s.token_expires_at),
   };
 }
@@ -1062,6 +1149,8 @@ async function api(request, env, ctx, url, r, method) {
       webhook_verified_at: Number(s.webhook_verified_at || 0),
       last_event_at: Number(s.last_event_at || 0),
       privacy_url: origin + '/privacidade',
+      oauth_redirect_url: origin + '/oauth/callback',
+      oauth_login_url: s.oauth_login_url || '',
       deletion_url: origin + '/exclusao',
       subscribe_fields: SUBSCRIBE_FIELDS,
       contacts: (cnt && cnt.n) || 0,
@@ -1217,13 +1306,27 @@ async function api(request, env, ctx, url, r, method) {
       notes = fb.notes;
       if (secret) upd.app_secret = secret; // também serve para conferir a assinatura dos eventos
     }
-    await setSettings(env, upd);
-    const s2 = await getSettings(env);
-    const sub = await subscribeWebhooks(s2);
-    const via = s2.api_mode === 'fb' ? ` (via Página do Facebook "${s2.fb_page_name}")` : '';
-    const details = [sub.ok ? 'Eventos assinados: ' + sub.fields.join(', ') : 'Não consegui assinar os eventos: ' + sub.error, ...notes].join(' | ');
-    await log(env, sub.ok && !notes.length ? 'ok' : 'aviso', `Instagram conectado: @${s2.ig_username}${via}`, details);
-    return json({ ok: true, account: accountInfo(s2), subscribe: sub, notes });
+    return json(await finishConnect(env, upd, notes));
+  }
+  if (r === 'oauth/start' && method === 'POST') {
+    const b = await readJson(request);
+    const secret = String(b.secret || '').trim();
+    let lu;
+    try {
+      lu = new URL(String(b.login_url || '').trim());
+    } catch {
+      return json({ error: 'Cole o "URL de login" completo que aparece na Meta (começa com https://).' }, 400);
+    }
+    if (lu.protocol !== 'https:' || !/(^|\.)(facebook|instagram)\.com$/i.test(lu.hostname)) return json({ error: 'Esse não parece ser o URL de login da Meta (precisa ser um endereço facebook.com ou instagram.com).' }, 400);
+    const appId = lu.searchParams.get('client_id') || lu.searchParams.get('app_id');
+    if (!appId) return json({ error: 'Não encontrei o ID do app nesse URL. Copie o "URL de login" inteiro da Meta.' }, 400);
+    if (!secret && !s.app_secret) return json({ error: 'Cole também a Chave secreta do aplicativo (Configurações do app → Básico).' }, 400);
+    const state = rid(32);
+    lu.searchParams.set('redirect_uri', origin + '/oauth/callback');
+    lu.searchParams.set('state', state);
+    if (!lu.searchParams.get('response_type')) lu.searchParams.set('response_type', 'code');
+    await setSettings(env, { oauth_state: state + ':' + now(), oauth_app_id: appId, oauth_login_url: String(b.login_url).trim(), ...(secret ? { app_secret: secret } : {}) });
+    return json({ url: lu.toString() });
   }
   if (r === 'disconnect' && method === 'POST') {
     await setSettings(env, { ig_token: null, ig_user_id: null, ig_app_scoped_id: null, ig_username: null, ig_name: null, ig_picture: null, token_updated_at: null, api_mode: null, fb_page_id: null, fb_page_name: null, token_expires_at: null });

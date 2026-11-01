@@ -15,7 +15,10 @@
  */
 
 const GRAPH_VERSION = 'v23.0';
-const GRAPH = 'https://graph.instagram.com/' + GRAPH_VERSION;
+const GRAPH = 'https://graph.instagram.com/' + GRAPH_VERSION; // conexão "login do Instagram" (token IG…)
+const FB_GRAPH = 'https://graph.facebook.com/' + GRAPH_VERSION; // conexão "login do Facebook" (token EAA…, via Página)
+const FB_PAGE_FIELDS = [['messages', 'messaging_postbacks', 'messaging_referrals', 'feed'], ['messages', 'messaging_postbacks'], ['messages'], ['feed']];
+const FB_REQUIRED_SCOPES = ['instagram_basic', 'instagram_manage_messages', 'instagram_manage_comments', 'pages_manage_metadata'];
 const SUBSCRIBE_FIELDS = ['comments', 'messages', 'messaging_postbacks', 'messaging_referral'];
 const TRIGGERS = ['comment', 'dm_keyword', 'welcome', 'ref_link', 'story_reply', 'story_mention', 'default', 'manual'];
 const DAY = 864e5;
@@ -379,7 +382,7 @@ async function loadAutomations(env) {
 // API do Instagram (Graph API)
 // ---------------------------------------------------------------------------
 async function ig(s, method, path, params = {}, body) {
-  const u = new URL(path.startsWith('http') ? path : GRAPH + path);
+  const u = new URL(path.startsWith('http') ? path : (s.api_mode === 'fb' ? FB_GRAPH : GRAPH) + path);
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== '') u.searchParams.set(k, v);
   u.searchParams.set('access_token', s.ig_token || '');
   const init = { method, headers: {} };
@@ -420,26 +423,96 @@ function explain(r) {
 }
 const isWindowError = (r) => r && (r.sub === 2534022 || /window/i.test(r.error || ''));
 
+// No login do Facebook as mensagens saem pela Página; no login do Instagram, pela própria conta.
+const messagesPath = (s) => '/' + (s.api_mode === 'fb' ? s.fb_page_id : s.ig_user_id || 'me') + '/messages';
 function sendMessage(s, recipient, message) {
-  return ig(s, 'POST', '/' + (s.ig_user_id || 'me') + '/messages', {}, { recipient, message });
+  return ig(s, 'POST', messagesPath(s), {}, { recipient, message });
 }
 function senderAction(s, id, action) {
-  return ig(s, 'POST', '/' + (s.ig_user_id || 'me') + '/messages', {}, { recipient: { id }, sender_action: action });
+  return ig(s, 'POST', messagesPath(s), {}, { recipient: { id }, sender_action: action });
 }
 
 async function subscribeWebhooks(s) {
-  const tries = [SUBSCRIBE_FIELDS, ['comments', 'messages', 'messaging_postbacks'], ['comments', 'messages']];
+  const fb = s.api_mode === 'fb';
+  const tries = fb ? FB_PAGE_FIELDS : [SUBSCRIBE_FIELDS, ['comments', 'messages', 'messaging_postbacks'], ['comments', 'messages']];
+  const path = fb ? '/' + s.fb_page_id + '/subscribed_apps' : '/me/subscribed_apps';
   let last;
   for (const f of tries) {
-    const r = await ig(s, 'POST', '/me/subscribed_apps', { subscribed_fields: f.join(',') });
+    const r = await ig(s, 'POST', path, { subscribed_fields: f.join(',') });
     if (r.ok) return { ok: true, fields: f };
     last = r;
   }
-  return { ok: false, error: explain(last) };
+  return { ok: false, error: explain(last) + (fb ? ' (confira se a permissão pages_manage_metadata foi concedida)' : '') };
+}
+
+/** Conecta usando um token do Facebook (de usuário, Página ou usuário do sistema). */
+async function connectFacebook(s, token, secret) {
+  const t = { ig_token: token, api_mode: 'fb' };
+  const me = await ig(t, 'GET', '/me', { fields: 'id,name' });
+  if (!me.ok) return { error: 'O Facebook não aceitou esse token: ' + explain(me) };
+  const notes = [];
+  const igFields = 'instagram_business_account{id,username,name,profile_picture_url}';
+  const pageList = (tok) => ig({ ig_token: tok, api_mode: 'fb' }, 'GET', '/me/accounts', { fields: 'id,name,access_token,' + igFields, limit: '100' });
+  let pages = [];
+  let acc = await pageList(token);
+  if (acc.ok) {
+    // Token de usuário: troca por um de longa duração para que o token da Página não expire.
+    if (secret) {
+      const app = await ig(t, 'GET', '/app', { fields: 'id' });
+      const ex = app.ok && app.data.id
+        ? await ig(t, 'GET', '/oauth/access_token', { grant_type: 'fb_exchange_token', client_id: app.data.id, client_secret: secret, fb_exchange_token: token })
+        : app;
+      if (ex.ok && ex.data.access_token) {
+        const acc2 = await pageList(ex.data.access_token);
+        if (acc2.ok) acc = acc2;
+      } else notes.push('Não consegui transformar em token permanente (' + explain(ex) + '). Confira a chave secreta do aplicativo.');
+    }
+    pages = (acc.data.data || []).filter((p) => p.instagram_business_account);
+  } else {
+    // Provavelmente já é um token de Página.
+    const pg = await ig(t, 'GET', '/' + me.data.id, { fields: 'id,name,' + igFields });
+    if (pg.ok && pg.data.instagram_business_account) pages = [{ id: pg.data.id, name: pg.data.name, access_token: token, instagram_business_account: pg.data.instagram_business_account }];
+  }
+  if (!pages.length) {
+    return {
+      error:
+        'Não encontrei nenhuma Página do Facebook com uma conta profissional do Instagram ligada a ela, para esse token. Confira: (1) seu Instagram está conectado a uma Página do Facebook; (2) ao gerar o token, você marcou essa Página e a conta do Instagram; (3) as permissões pages_show_list e instagram_basic foram concedidas.',
+    };
+  }
+  const want = String(s.ig_username || '').toLowerCase();
+  const page = pages.find((p) => String(p.instagram_business_account.username || '').toLowerCase() === want) || pages[0];
+  const igAcc = page.instagram_business_account;
+  const dbg = await ig({ ig_token: page.access_token, api_mode: 'fb' }, 'GET', '/debug_token', { input_token: page.access_token });
+  const info = dbg.ok && dbg.data && dbg.data.data ? dbg.data.data : null;
+  if (info && Array.isArray(info.scopes)) {
+    const missing = FB_REQUIRED_SCOPES.filter((x) => !info.scopes.includes(x));
+    if (missing.length) notes.push('Faltam permissões no token: ' + missing.join(', ') + '. Adicione no app da Meta e gere o token de novo.');
+  }
+  if (info && info.expires_at) notes.push('Este token expira em ' + new Date(info.expires_at * 1000).toLocaleDateString('pt-BR') + '. Cole a chave secreta do aplicativo ao conectar para ele não expirar.');
+  if (pages.length > 1) notes.push('Encontrei ' + pages.length + ' Páginas com Instagram; usei @' + igAcc.username + '.');
+  return {
+    ok: true,
+    notes,
+    settings: {
+      api_mode: 'fb',
+      ig_token: page.access_token,
+      ig_user_id: String(igAcc.id),
+      ig_app_scoped_id: '',
+      ig_username: igAcc.username || '',
+      ig_name: igAcc.name || page.name || '',
+      ig_picture: igAcc.profile_picture_url || '',
+      fb_page_id: String(page.id),
+      fb_page_name: page.name || '',
+      token_updated_at: now(),
+      token_expires_at: info ? (info.expires_at ? info.expires_at * 1000 : 0) : '',
+      token_refresh_tried: null,
+    },
+  };
 }
 
 async function refreshToken(env, s, force) {
   if (!s.ig_token) return { ok: false, error: 'Instagram não conectado' };
+  if (s.api_mode === 'fb') return { ok: true, skipped: true, error: force ? 'Conexão pelo Facebook: o token da Página não precisa ser renovado.' : undefined };
   const t = now();
   const age = t - Number(s.token_updated_at || 0);
   if (!force) {
@@ -916,6 +989,9 @@ function accountInfo(s) {
     name: s.ig_name,
     picture: s.ig_picture,
     token_updated_at: Number(s.token_updated_at || 0),
+    mode: s.api_mode === 'fb' ? 'fb' : 'ig',
+    page_name: s.fb_page_name || '',
+    token_expires_at: s.token_expires_at === '' || s.token_expires_at === undefined ? null : Number(s.token_expires_at),
   };
 }
 
@@ -1056,7 +1132,7 @@ async function api(request, env, ctx, url, r, method) {
   // ---- posts do Instagram (para escolher em quais posts a automação vale)
   if (r === 'posts' && method === 'GET') {
     if (!s.ig_token) return json({ error: 'Conecte o Instagram primeiro (Configurações).' }, 400);
-    const res = await ig(s, 'GET', '/me/media', {
+    const res = await ig(s, 'GET', '/' + (s.api_mode === 'fb' ? s.ig_user_id : 'me') + '/media', {
       fields: 'id,caption,media_type,media_product_type,thumbnail_url,media_url,permalink,timestamp',
       limit: '30',
       after: url.searchParams.get('after') || undefined,
@@ -1107,29 +1183,49 @@ async function api(request, env, ctx, url, r, method) {
     const b = await readJson(request);
     const token = String(b.token || '').replace(/\s+/g, '');
     if (token.length < 20) return json({ error: 'Cole o token de acesso completo.' }, 400);
-    const me = await ig({ ig_token: token }, 'GET', '/me', { fields: 'user_id,username,name,profile_picture_url,account_type' });
-    if (!me.ok) {
-      const fb = token.startsWith('EAA') ? ' Esse parece ser um token do Facebook — use o token gerado na seção "API com login do Instagram" (começa com IG).' : '';
-      return json({ error: 'O Instagram não aceitou esse token: ' + explain(me) + fb }, 400);
+    const secret = String(b.secret || '').trim();
+    let upd = null;
+    let notes = [];
+    let igError = null;
+    if (!token.startsWith('EAA')) {
+      // Token do "login do Instagram" (graph.instagram.com)
+      const me = await ig({ ig_token: token }, 'GET', '/me', { fields: 'user_id,username,name,profile_picture_url,account_type' });
+      if (me.ok) {
+        const d = me.data;
+        upd = {
+          api_mode: 'ig',
+          ig_token: token,
+          ig_user_id: String(d.user_id || d.id),
+          ig_app_scoped_id: String(d.id || ''),
+          ig_username: d.username || '',
+          ig_name: d.name || '',
+          ig_picture: d.profile_picture_url || '',
+          fb_page_id: null,
+          fb_page_name: null,
+          token_updated_at: now(),
+          token_expires_at: null,
+          token_refresh_tried: null,
+        };
+      } else igError = me;
     }
-    const d = me.data;
-    await setSettings(env, {
-      ig_token: token,
-      ig_user_id: String(d.user_id || d.id),
-      ig_app_scoped_id: String(d.id || ''),
-      ig_username: d.username || '',
-      ig_name: d.name || '',
-      ig_picture: d.profile_picture_url || '',
-      token_updated_at: now(),
-      token_refresh_tried: null,
-    });
+    if (!upd) {
+      // Token do "login do Facebook" (graph.facebook.com, via Página)
+      const fb = await connectFacebook(s, token, secret);
+      if (!fb.ok) return json({ error: fb.error + (igError ? ' (Como token do Instagram também não funcionou: ' + explain(igError) + ')' : '') }, 400);
+      upd = fb.settings;
+      notes = fb.notes;
+      if (secret) upd.app_secret = secret; // também serve para conferir a assinatura dos eventos
+    }
+    await setSettings(env, upd);
     const s2 = await getSettings(env);
     const sub = await subscribeWebhooks(s2);
-    await log(env, sub.ok ? 'ok' : 'aviso', `Instagram conectado: @${d.username}`, sub.ok ? 'Eventos assinados: ' + sub.fields.join(', ') : 'Não consegui assinar os eventos: ' + sub.error);
-    return json({ ok: true, account: accountInfo(s2), subscribe: sub });
+    const via = s2.api_mode === 'fb' ? ` (via Página do Facebook "${s2.fb_page_name}")` : '';
+    const details = [sub.ok ? 'Eventos assinados: ' + sub.fields.join(', ') : 'Não consegui assinar os eventos: ' + sub.error, ...notes].join(' | ');
+    await log(env, sub.ok && !notes.length ? 'ok' : 'aviso', `Instagram conectado: @${s2.ig_username}${via}`, details);
+    return json({ ok: true, account: accountInfo(s2), subscribe: sub, notes });
   }
   if (r === 'disconnect' && method === 'POST') {
-    await setSettings(env, { ig_token: null, ig_user_id: null, ig_app_scoped_id: null, ig_username: null, ig_name: null, ig_picture: null, token_updated_at: null });
+    await setSettings(env, { ig_token: null, ig_user_id: null, ig_app_scoped_id: null, ig_username: null, ig_name: null, ig_picture: null, token_updated_at: null, api_mode: null, fb_page_id: null, fb_page_name: null, token_expires_at: null });
     await log(env, 'info', 'Instagram desconectado do painel.');
     return json({ ok: true });
   }

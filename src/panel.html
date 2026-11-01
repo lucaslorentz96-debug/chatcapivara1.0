@@ -994,17 +994,23 @@ function renderSettings() {
 
   <section class="card">
     <h2>1. Conectar o Instagram</h2>
-    ${acc ? `<div class="acc-card">${acc.picture ? `<img src="${esc(acc.picture)}" alt="">` : ''}<div style="flex:1"><b>@${esc(acc.username)}</b><div class="hint">${esc(acc.name || '')} · ID ${esc(acc.id)}</div><div class="hint">Token atualizado ${tokenDays === null ? '—' : tokenDays === 0 ? 'hoje' : 'há ' + tokenDays + ' dia(s)'} · renova sozinho antes de vencer</div></div></div>
-      <div class="row" style="margin-top:12px"><button data-act="refresh-token">↻ Renovar token agora</button><button data-act="resubscribe">↻ Assinar eventos de novo</button><button class="ghost danger" data-act="disconnect">Desconectar</button></div>
-      <details style="margin-top:14px"><summary class="hint" style="cursor:pointer">Trocar de token / conta</summary>` : '<p class="hint">No painel da Meta: <b>API com login do Instagram → Gerar tokens de acesso → Adicionar conta → Gerar token</b>. Copie o token e cole aqui:</p>'}
-    <textarea id="tok" rows="3" placeholder="Cole aqui o token de acesso (começa com IG…)" style="margin-top:8px"></textarea>
-    <button class="primary" data-act="connect" style="margin-top:8px">Conectar</button>
+    ${acc ? `<div class="acc-card">${acc.picture ? `<img src="${esc(acc.picture)}" alt="">` : ''}<div style="flex:1"><b>@${esc(acc.username)}</b><div class="hint">${esc(acc.name || '')} · ID ${esc(acc.id)}</div>
+        ${acc.mode === 'fb'
+          ? `<div class="hint">Conectado pelo Facebook · Página "${esc(acc.page_name)}" · ${acc.token_expires_at === 0 ? 'token permanente ✅' : acc.token_expires_at ? '⚠️ token expira em ' + fmtDate(acc.token_expires_at) : 'validade do token desconhecida'}</div>`
+          : `<div class="hint">Token atualizado ${tokenDays === null ? '—' : tokenDays === 0 ? 'hoje' : 'há ' + tokenDays + ' dia(s)'} · renova sozinho antes de vencer</div>`}</div></div>
+      <div class="row" style="margin-top:12px">${acc.mode === 'fb' ? '' : '<button data-act="refresh-token">↻ Renovar token agora</button>'}<button data-act="resubscribe">↻ Assinar eventos de novo</button><button class="ghost danger" data-act="disconnect">Desconectar</button></div>
+      <details style="margin-top:14px"><summary class="hint" style="cursor:pointer">Trocar de token / conta</summary>` : `<p class="hint">Gere o token no painel da Meta (<b>Configuração da API com login do Facebook → Gerar tokens de acesso</b>, ou no <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">Explorador da Graph API</a>) e cole aqui. Aceita token do Facebook (começa com <code>EAA</code>) ou do Instagram (começa com <code>IG</code>).</p>`}
+    <label class="lbl">Token de acesso</label>
+    <textarea id="tok" rows="3" placeholder="Cole aqui o token (EAA… ou IG…)"></textarea>
+    <label class="lbl">Chave secreta do aplicativo <span class="hint">(Configurações do app → Básico → Chave secreta do aplicativo)</span></label>
+    <input type="password" id="tok-secret" placeholder="Recomendado: deixa o token permanente e protege o webhook" autocomplete="off">
+    <button class="primary" data-act="connect" style="margin-top:10px">Conectar</button>
     ${acc ? '</details>' : ''}
   </section>
 
   <section class="card">
     <h2>2. Webhook (cole no painel da Meta)</h2>
-    <p class="hint">Em <b>API com login do Instagram → Configurar webhooks</b>:</p>
+    <p class="hint">Na Meta, em <b>Configuração da API → Configurar webhooks</b> (ou no menu <b>Webhooks</b>, objeto <b>Instagram</b>):</p>
     <label class="lbl">URL de retorno de chamada (Callback URL)</label>${copyField('wh-url', st.webhook_url)}
     <label class="lbl">Token de verificação (Verify token)</label>${copyField('wh-tok', st.verify_token)}
     <p class="hint" style="margin-top:10px">Depois de clicar em <b>Verificar e salvar</b>, ative as assinaturas destes campos: ${st.subscribe_fields.map((f) => `<code>${f}</code>`).join(', ')}.</p>
@@ -1012,7 +1018,7 @@ function renderSettings() {
 
   <section class="card">
     <h2>3. Chave secreta do app (recomendado)</h2>
-    <p class="hint">Garante que só a Meta consegue mandar eventos para o seu bot. Fica na mesma página da Meta: <b>Chave secreta do app do Instagram</b>. ${st.app_secret_set ? '<span class="pill ok">configurada</span>' : ''}</p>
+    <p class="hint">Garante que só a Meta consegue mandar eventos para o seu bot. Na Meta: <b>Configurações do app → Básico → Chave secreta do aplicativo</b> (se você colou ela ao conectar, já está salva). ${st.app_secret_set ? '<span class="pill ok">configurada</span>' : ''}</p>
     <div class="copy"><input type="password" id="secret" placeholder="${st.app_secret_set ? '•••••••• (deixe vazio e salve para remover)' : 'Cole a chave secreta aqui'}" autocomplete="off"><button data-act="save-secret">Salvar</button></div>
     <p class="hint" style="margin-top:8px">Se o Registro mostrar "assinatura inválida", a chave está errada — apague o campo e salve para desativar a checagem.</p>
   </section>
@@ -1136,15 +1142,17 @@ const ACT = {
   },
   async connect(el) {
     const token = $('#tok').value.trim();
+    const secret = $('#tok-secret').value.trim();
     if (!token) return toast('Cole o token primeiro.', 'err');
     el.disabled = true;
     el.innerHTML = '<span class="spinner"></span> Conectando…';
     try {
-      const r = await api('connect', { method: 'POST', body: { token } });
+      const r = await api('connect', { method: 'POST', body: { token, secret } });
       await refreshState();
       renderSettings();
       if (r.subscribe && r.subscribe.ok) toast('Conectado como @' + r.account.username + ' ✅', 'ok');
       else toast('Conectado, mas não consegui assinar os eventos: ' + (r.subscribe && r.subscribe.error), 'err');
+      if (r.notes && r.notes.length) modal(`<h2>Conectado, com observações</h2><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul><div class="modal-foot"><span class="spacer"></span><button class="primary" data-close>Ok</button></div>`);
     } catch (e) {
       if (e.message !== 'auth') toast(e.message, 'err');
       el.disabled = false;

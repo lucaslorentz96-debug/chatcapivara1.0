@@ -42,56 +42,77 @@ O código já está no repositório **`lucaslorentz96-debug/chatcapivara1.0`**.
 
 ## PARTE 2: Meta for Developers (ligar o Instagram)
 
+> Desde o fim de outubro de 2026, apps novos da Meta só oferecem duas opções: **login do Facebook** e **login unificado**. O bot usa o **login do Facebook**, o mesmo método que o ManyChat usa.
+
+### Antes de começar: seu Instagram precisa estar ligado a uma Página do Facebook
+No app do Instagram, vá em **Perfil → Editar perfil → Página**. Se aparecer o nome de uma Página, está pronto. Se não aparecer, toque em **Conectar ou criar** e siga os passos.
+
 ### 2.1 Criar o app
 1. Entre em **developers.facebook.com → Meus apps → Criar app**.
-2. No nome, coloque **`InstaBot Isa`** e informe o seu e-mail.
-3. No **caso de uso**, escolha **"Gerenciar mensagens e conteúdo no Instagram"** (em inglês: *Manage messaging & content on Instagram*).
-4. Se perguntar sobre **portfólio empresarial**, pode pular ("Não quero conectar agora").
-5. Conclua a criação do app.
+2. Preencha:
+   - Nome: `InstaBot Isa`
+   - E-mail: o seu
+3. No **caso de uso**, escolha **"Gerenciar mensagens e conteúdo no Instagram"**.
+4. Se perguntar sobre portfólio empresarial, escolha **"Ainda não quero conectar"**. Depois, **Avançar** até **Ir para o painel**.
 
-### 2.2 Abrir a configuração da API
-1. No painel do app, abra **Casos de uso** e clique em **Personalizar** no caso de uso do Instagram.
-2. Entre em **"Configuração da API com login do Instagram"** (*API setup with Instagram business login*).
-3. Confira se estas permissões estão na lista. Se aparecer um botão "Adicionar" ao lado de alguma, clique nele:
-   - `instagram_business_basic`
-   - `instagram_business_manage_messages`
-   - `instagram_business_manage_comments`
+### 2.2 Permissões
+1. No menu da esquerda, abra **Casos de uso** e clique em **Personalizar** no caso de uso do Instagram.
+2. No menu interno, escolha **"Configuração da API com login do Facebook"**.
+   - **Não** use "API setup with Unified login": essa opção exige portfólio empresarial.
+3. No passo **"1. Adicionar permissões obrigatórias"**, clique nos dois botões:
+   - **Add required messaging permissions**
+   - **Add required content permissions**
+4. No menu interno, abra **"Permissões e recursos"**, procure e clique em **Adicionar** nestas duas:
+   - `instagram_manage_comments` (para responder comentários)
+   - `pages_manage_metadata` (para o bot receber os eventos)
 
-### 2.3 Gerar o token e conectar no painel
-1. Na mesma página, encontre **"Gerar tokens de acesso"** e clique em **Adicionar conta**.
-2. Entre com o Instagram **@dicasdaisaoliveira** e autorize tudo.
-3. Clique em **Gerar token** ao lado da conta e copie o token. Ele começa com `IG…`.
-4. No **painel do bot → Configurações → 1. Conectar o Instagram**, cole o token e clique em **Conectar**.
-5. Deve aparecer "Conectado como @dicasdaisaoliveira ✅".
+### 2.3 Gerar o token e conectar o bot
+**Opção A, na própria página:** se a "Configuração da API com login do Facebook" tiver o passo **"Gerar tokens de acesso"**, conecte sua Página e o Instagram, clique em **Gerar token** e copie.
 
-### 2.4 Configurar o webhook (por onde o Instagram avisa o bot)
-1. Na página da Meta, encontre **"Configurar webhooks"**.
-2. Copie do **painel do bot → Configurações → 2. Webhook** e cole na Meta:
-   - **URL de retorno de chamada** (Callback URL)
-   - **Verificar token** (Verify token)
-3. Clique em **Verificar e salvar**. No painel do bot deve aparecer ✅ "Webhook verificado pela Meta".
-4. Logo abaixo aparece a lista de campos. Clique em **Assinar** (Subscribe) em:
+**Opção B, que sempre funciona: Explorador da Graph API**
+1. Abra **developers.facebook.com/tools/explorer**.
+2. À direita, preencha:
+   - **Aplicativo da Meta:** `InstaBot Isa`
+   - **Usuário ou Página:** "Token do usuário"
+3. Em **Permissões**, adicione:
+   - `instagram_basic`
+   - `instagram_manage_messages`
+   - `instagram_manage_comments`
+   - `pages_show_list`
+   - `pages_read_engagement`
+   - `pages_manage_metadata`
+   - `business_management`
+4. Clique em **Generate Access Token** (Gerar token de acesso). Entre no Facebook e **marque a sua Página e a sua conta do Instagram**.
+5. Copie o token. Ele começa com `EAA`.
+
+**Depois, no painel do bot:**
+1. Vá em **Configurações → 1. Conectar o Instagram** e cole o token.
+2. No campo **Chave secreta do aplicativo**, cole a chave que fica na Meta em **Configurações do app → Básico → Chave secreta do aplicativo → Mostrar**.
+3. Clique em **Conectar**. O bot transforma o token num **token permanente** da Página.
+
+### 2.4 Configurar o webhook
+1. Na "Configuração da API com login do Facebook", vá ao passo **"Configurar webhooks"**. Se não achar, use o menu da esquerda **Webhooks** e escolha o objeto **Instagram**.
+2. Preencha:
+   - **URL de retorno de chamada:** `https://chatcapivara1-0.lucaslorentz96.workers.dev/webhook`
+   - **Verificar token:** copie do **painel → Configurações → 2** (começa com `ib_`)
+3. Clique em **Verificar e salvar**.
+4. Clique em **Assinar** (*Subscribe*) nestes campos:
    - `comments`
    - `messages`
    - `messaging_postbacks`
    - `messaging_referral`
 
-### 2.5 Chave secreta (segurança)
-1. No topo da mesma página da Meta aparece a **"Chave secreta do app do Instagram"** (*Instagram app secret*). Clique em **Mostrar** e copie.
-2. Cole no **painel do bot → Configurações → 3. Chave secreta** e clique em **Salvar**.
+### 2.5 Informações básicas do app
+1. Abra **Configurações do app → Básico** e preencha:
+   - **URL da Política de Privacidade:** `https://chatcapivara1-0.lucaslorentz96.workers.dev/privacidade`
+   - **URL de exclusão de dados do usuário:** `https://chatcapivara1-0.lucaslorentz96.workers.dev/exclusao`
+   - **Categoria:** "Negócios e páginas"
+   - **Ícone:** qualquer imagem quadrada de 1024×1024
+2. Clique em **Salvar alterações**.
 
-### 2.6 Links de privacidade e publicar o app
-1. Na Meta, abra **Configurações do app → Básico**.
-2. Copie do **painel do bot → Configurações → 4** e cole em:
-   - **URL da Política de Privacidade**
-   - **URL de exclusão de dados do usuário** (ou "Instruções de exclusão de dados")
-3. Escolha uma **Categoria**, por exemplo "Negócios e páginas".
-4. Se pedir **ícone do app**, use qualquer imagem quadrada de 1024×1024, por exemplo sua foto de perfil.
-5. Clique em **Salvar alterações**.
-6. Volte ao painel inicial do app e clique em **Publicar** (ou mude o **Modo do app** de *Desenvolvimento* para *Ao vivo*).
-
-> **Por que publicar?** No modo Desenvolvimento, o Instagram só avisa o bot sobre contas cadastradas como testadoras. Como o app é usado só na sua própria conta, a Meta permite publicar com o **Acesso Padrão**, sem análise.
-> Se mesmo assim a Meta exigir **Análise do app** (App Review) para alguma permissão, me avise que eu te ajudo com o pedido.
+### 2.6 Publicar o app
+1. No menu da esquerda, clique em **Publicar** (ou mude o **Modo do app** para **Ao vivo**). Sem isso, o Instagram só avisa o bot sobre contas de teste.
+2. Se a Meta pedir **Análise do app**, me avise que eu te ajudo com o pedido.
 
 ---
 

@@ -64,7 +64,7 @@ No app do Instagram, vá em **Perfil → Editar perfil → Página**. Se aparece
    - **Add required content permissions**
 4. No menu interno, abra **"Permissões e recursos"**, procure e clique em **Adicionar** nestas duas:
    - `instagram_manage_comments` (para responder comentários)
-   - `pages_manage_metadata` (para o bot receber os eventos)
+   - `pages_manage_metadata` (se não aparecer, pule: depois você ativa a "Assinatura do webhook" da Página no painel da Meta)
 
 ### 2.3 Gerar o token e conectar o bot
 **Opção A, na própria página:** se a "Configuração da API com login do Facebook" tiver o passo **"Gerar tokens de acesso"**, conecte sua Página e o Instagram, clique em **Gerar token** e copie.

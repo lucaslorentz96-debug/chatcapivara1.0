@@ -1151,6 +1151,7 @@ const ACT = {
       await refreshState();
       renderSettings();
       if (r.subscribe && r.subscribe.ok) toast('Conectado como @' + r.account.username + ' ✅', 'ok');
+      else if (r.subscribe && r.subscribe.manual) { toast('Conectado como @' + r.account.username + ' ✅', 'ok'); (r.notes = r.notes || []).unshift(r.subscribe.error); }
       else toast('Conectado, mas não consegui assinar os eventos: ' + (r.subscribe && r.subscribe.error), 'err');
       if (r.notes && r.notes.length) modal(`<h2>Conectado, com observações</h2><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul><div class="modal-foot"><span class="spacer"></span><button class="primary" data-close>Ok</button></div>`);
     } catch (e) {

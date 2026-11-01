@@ -18,7 +18,7 @@ const GRAPH_VERSION = 'v23.0';
 const GRAPH = 'https://graph.instagram.com/' + GRAPH_VERSION; // conexão "login do Instagram" (token IG…)
 const FB_GRAPH = 'https://graph.facebook.com/' + GRAPH_VERSION; // conexão "login do Facebook" (token EAA…, via Página)
 const FB_PAGE_FIELDS = [['messages', 'messaging_postbacks', 'messaging_referrals', 'feed'], ['messages', 'messaging_postbacks'], ['messages'], ['feed']];
-const FB_REQUIRED_SCOPES = ['instagram_basic', 'instagram_manage_messages', 'instagram_manage_comments', 'pages_manage_metadata'];
+const FB_REQUIRED_SCOPES = ['instagram_basic', 'instagram_manage_messages', 'instagram_manage_comments'];
 const SUBSCRIBE_FIELDS = ['comments', 'messages', 'messaging_postbacks', 'messaging_referral'];
 const TRIGGERS = ['comment', 'dm_keyword', 'welcome', 'ref_link', 'story_reply', 'story_mention', 'default', 'manual'];
 const DAY = 864e5;
@@ -442,7 +442,8 @@ async function subscribeWebhooks(s) {
     if (r.ok) return { ok: true, fields: f };
     last = r;
   }
-  return { ok: false, error: explain(last) + (fb ? ' (confira se a permissão pages_manage_metadata foi concedida)' : '') };
+  if (fb) return { ok: false, manual: true, error: 'O bot não conseguiu se inscrever sozinho na Página (falta a permissão pages_manage_metadata, e tudo bem). Faça isso na Meta: em "Configuração da API com login do Facebook", no passo de tokens/webhooks, ative a "Assinatura do webhook" da sua Página. Detalhe técnico: ' + explain(last) };
+  return { ok: false, error: explain(last) };
 }
 
 /** Conecta usando um token do Facebook (de usuário, Página ou usuário do sistema). */

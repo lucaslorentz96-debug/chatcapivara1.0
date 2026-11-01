@@ -1,0 +1,1250 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>InstaBot · Painel</title>
+<style>
+:root{
+  --bg:#f5f5f8;--card:#ffffff;--text:#17171f;--muted:#6c6c7d;--line:#e5e5ee;--soft:#f0f0f5;
+  --accent:#d1307f;--accent-2:#7a3ce0;--accent-soft:#fbe8f2;
+  --ok:#15924a;--ok-soft:#e3f6ea;--warn:#b86a00;--warn-soft:#fff3dc;--err:#d02a2a;--err-soft:#fde8e8;--info:#2463d6;--info-soft:#e6efff;
+  --bubble:#efeff4;--input:#ffffff;--shadow:0 1px 2px rgba(20,20,40,.05),0 6px 20px rgba(20,20,40,.05);
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0e0e13;--card:#17171f;--text:#ececf2;--muted:#9c9cae;--line:#2a2a37;--soft:#20202a;
+  --accent-soft:#3a1a2c;--ok-soft:#10301d;--warn-soft:#33270f;--err-soft:#3a1616;--info-soft:#14223d;
+  --bubble:#262632;--input:#111118;--shadow:none}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+h1{font-size:24px;margin:0;letter-spacing:-.01em}
+h2{font-size:18px;margin:0 0 6px}
+h3{font-size:16px;margin:0 0 4px}
+p{margin:0 0 10px}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{width:100%;background:var(--input);border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+textarea{resize:vertical;min-height:84px;line-height:1.45}
+label.lbl{display:block;font-weight:600;font-size:13px;margin:12px 0 5px;color:var(--text)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;transition:background .15s,transform .05s,border-color .15s}
+button:hover{background:var(--soft)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.4;cursor:default}
+button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border:0}
+button.primary:hover{filter:brightness(1.06)}
+button.danger{color:var(--err)}
+button.ghost{background:transparent;border-color:transparent}
+button.ghost:hover{background:var(--soft)}
+button.small{padding:5px 10px;font-size:13px;border-radius:8px}
+button.icon{padding:4px 8px;font-size:14px;border-radius:8px;min-width:32px}
+.hint{color:var(--muted);font-size:13px}
+.center{text-align:center}
+.spacer{flex:1}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
+/* topo */
+header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;padding:10px 20px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.logo{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#f9ce34,#ee2a7b 50%,#6228d7);font-size:15px}
+header nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+header nav a{padding:7px 12px;border-radius:9px;text-decoration:none;color:var(--muted);font-weight:600;white-space:nowrap}
+header nav a:hover{background:var(--soft);color:var(--text)}
+header nav a.on{background:var(--accent-soft);color:var(--accent)}
+.acc{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;white-space:nowrap}
+.acc img{width:28px;height:28px;border-radius:50%;object-fit:cover;background:var(--soft)}
+@media(max-width:760px){header.top{flex-wrap:wrap;gap:8px;padding:10px 12px}.acc{margin-left:auto}header nav{order:3;width:100%}}
+main{max-width:1100px;margin:0 auto;padding:22px 16px 120px}
+.head-row{display:flex;align-items:center;gap:12px;margin:4px 0 18px;flex-wrap:wrap}
+.head-row h1{flex:1}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+.banner{padding:12px 14px;border-radius:12px;margin-bottom:14px;font-weight:500}
+.banner.warn{background:var(--warn-soft);color:var(--warn)}
+.banner.info{background:var(--info-soft);color:var(--info)}
+.banner.err{background:var(--err-soft);color:var(--err)}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;background:var(--soft);color:var(--muted)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.err{background:var(--err-soft);color:var(--err)}
+.pill.info{background:var(--info-soft);color:var(--info)}
+
+/* switch */
+.switch{position:relative;display:inline-block;width:42px;height:24px;flex:none}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch span{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:.2s;cursor:pointer}
+.switch span:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked+span{background:var(--ok)}
+.switch input:checked+span:before{transform:translateX(18px)}
+
+/* lista de automações */
+.auto-list{display:flex;flex-direction:column;gap:10px}
+.auto{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.auto.off{opacity:.6}
+.auto-ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:21px;background:var(--accent-soft);flex:none}
+.auto-main{flex:1;min-width:0;cursor:pointer}
+.auto-name{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.auto-sum{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.auto-stats{font-size:12px;color:var(--muted);margin-top:3px}
+.auto-act{display:flex;gap:4px;align-items:center;flex:none}
+@media(max-width:640px){.auto{flex-wrap:wrap}.auto-act{width:100%;justify-content:flex-end}}
+.empty{text-align:center;padding:40px 20px}
+.empty .big{font-size:44px}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(10,10,20,.5);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:5vh 12px;overflow:auto;animation:fade .15s}
+.modal{background:var(--card);border-radius:18px;padding:22px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal.wide{max-width:860px}
+.modal-foot{display:flex;gap:8px;align-items:center;margin-top:18px}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+@media(max-width:560px){.tpl-grid{grid-template-columns:1fr}}
+.tpl{text-align:left;padding:14px;border-radius:12px;font-weight:400;display:flex;gap:12px;align-items:flex-start}
+.tpl b{display:block;margin-bottom:2px}
+.tpl .ic{font-size:24px;line-height:1}
+.tpl small{color:var(--muted)}
+
+/* editor */
+.editor{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+@media(max-width:960px){.editor{grid-template-columns:1fr}.ed-preview{position:static!important}}
+.ed-preview{position:sticky;top:76px}
+.sec-title{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.step{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;flex:none}
+.blk{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--card)}
+.blk-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line);background:var(--soft);border-radius:12px 12px 0 0}
+.blk-type{font-weight:700;font-size:14px}
+.blk-ctl{display:flex;gap:2px}
+.blk-body{padding:12px 14px}
+.ta-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap}
+.vars{font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.vars button{padding:1px 7px;font-size:12px;border-radius:6px;font-weight:600}
+.count{font-size:12px;color:var(--muted)}
+.count.over{color:var(--err);font-weight:700}
+.btns{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.btn-row{display:grid;grid-template-columns:178px 150px 1fr 34px;gap:6px;align-items:center}
+.btn-row.opt{grid-template-columns:180px 1fr 34px}
+@media(max-width:700px){.btn-row{grid-template-columns:1fr 1fr 34px}.btn-row>*:nth-child(3){grid-column:1/3}.btn-row.opt{grid-template-columns:1fr 34px}.btn-row.opt>*:nth-child(2){grid-column:1/2}.btn-row.opt>*:nth-child(3){grid-column:2/3;grid-row:1/3}}
+.add-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.add-row button{border-style:dashed}
+.imgpick{display:flex;gap:12px;align-items:flex-start}
+.imgpick img,.imgph{width:110px;height:110px;border-radius:10px;object-fit:cover;background:var(--soft);flex:none;display:grid;place-items:center;color:var(--muted);font-size:12px;text-align:center}
+.imgpick-ctl{flex:1;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.imgpick-ctl details{width:100%}
+.imgpick-ctl summary{cursor:pointer;font-size:13px;color:var(--muted);margin:2px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700}
+.posts-sel{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.posts-sel img{width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--soft)}
+.seg{display:inline-flex;background:var(--soft);border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:8px;font-size:13px}
+.seg button.on{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);color:var(--accent)}
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--card) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 16px}
+.savebar-in{max-width:1100px;margin:0 auto;display:flex;gap:10px;align-items:center}
+
+/* prévia (celular) */
+.phone{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:10px;box-shadow:var(--shadow)}
+.phone-head{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
+.phone-head img,.phone-head .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}
+.pv{padding:12px 6px;display:flex;flex-direction:column;gap:6px;min-height:300px;max-height:68vh;overflow:auto}
+.pv-bot{align-self:flex-start;background:var(--bubble);border-radius:18px 18px 18px 6px;padding:9px 13px;max-width:88%;font-size:14px;word-wrap:break-word;overflow-wrap:anywhere}
+.pv-user{align-self:flex-end;background:linear-gradient(135deg,#7a3ce0,#d1307f);color:#fff;border-radius:18px 18px 6px 18px;padding:9px 13px;max-width:80%;font-size:14px}
+.pv-btn{margin:8px -5px -3px;background:var(--card);border-radius:10px;padding:7px;text-align:center;font-weight:700;font-size:13px}
+.pv-btn+.pv-btn{margin-top:5px}
+.pv-link{color:#3b6fe0;text-decoration:underline}
+.pv-img{align-self:flex-start;max-width:70%}
+.pv-img img{width:100%;border-radius:16px;display:block}
+.pv-card{align-self:flex-start;width:82%;background:var(--bubble);border-radius:16px;overflow:hidden;font-size:14px}
+.pv-card img{width:100%;aspect-ratio:1.91/1;object-fit:cover;display:block;background:var(--soft)}
+.pv-card .pc-b{padding:9px 12px}
+.pv-card .pc-t{font-weight:700}
+.pv-card .pc-s{color:var(--muted);font-size:13px}
+.pv-qr{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+.pv-qr span{border:1.5px solid #7a3ce0;color:#7a3ce0;border-radius:99px;padding:4px 11px;font-size:13px;font-weight:600}
+.pv-note{font-size:12px;color:var(--muted);background:var(--soft);border-radius:10px;padding:7px 10px}
+.pv-sep{text-align:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:6px 0}
+.pv-typing{align-self:flex-start;background:var(--bubble);border-radius:18px;padding:10px 14px;display:flex;gap:4px}
+.pv-typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.pv-typing span:nth-child(2){animation-delay:.2s}.pv-typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.pv-empty{color:var(--muted);text-align:center;margin:auto;font-size:13px}
+
+/* galeria / posts */
+.gal-grid,.posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px;max-height:60vh;overflow:auto}
+.gal-item{padding:0;border-radius:12px;overflow:hidden;text-align:left;font-weight:400;display:flex;flex-direction:column;position:relative}
+.gal-item img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--soft)}
+.gal-item span{font-size:12px;padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.gal-item .gal-ctl{display:flex;gap:4px;padding:0 6px 6px}
+.post{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;border:3px solid transparent;background:var(--soft)}
+.post.on{border-color:var(--accent)}
+.post.on:after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+.post img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.post-cap{display:block;font-size:11px;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post-type{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px}
+.upload{display:flex;align-items:center;justify-content:center;border:2px dashed var(--line);border-radius:12px;padding:18px;cursor:pointer;font-weight:600;color:var(--muted)}
+.upload:hover{border-color:var(--accent);color:var(--accent)}
+
+/* tabelas, registro */
+.table-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;background:var(--soft)}
+tr:last-child td{border-bottom:0}
+.search{max-width:360px;margin-bottom:12px}
+.logs{display:flex;flex-direction:column;gap:6px}
+.log{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start}
+.log time{font-size:12px;color:var(--muted);white-space:nowrap}
+.log .msg{grid-column:1/-1;font-size:14px;overflow-wrap:anywhere}
+.log details{grid-column:1/-1}
+.log summary{font-size:12px;color:var(--muted);cursor:pointer}
+.log pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;background:var(--soft);padding:8px;border-radius:8px;margin:6px 0 0;max-height:300px;overflow:auto}
+
+/* configurações */
+.check{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.check:last-child{border-bottom:0}
+.check .st{width:24px;text-align:center;font-size:17px}
+.check .tx{flex:1}
+.copy{display:flex;gap:6px}
+.copy input{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+.acc-card{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--soft)}
+.acc-card img{width:48px;height:48px;border-radius:50%;object-fit:cover}
+
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login .card{width:100%;max-width:380px;text-align:center;padding:30px}
+.login .logo{width:56px;height:56px;font-size:28px;border-radius:16px;margin:0 auto 14px}
+
+#toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:#1d1d27;color:#fff;padding:10px 16px;border-radius:12px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.25);animation:fade .2s;max-width:90vw}
+.toast.err{background:var(--err)}
+.toast.ok{background:#15924a}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app"><div class="login"><span class="spinner"></span></div></div>
+<div id="toast"></div>
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const app = $('#app');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const S = { st: null, autos: [], draft: null, dirty: false, media: null, prevHash: '', skipHash: false };
+
+const TRIG = {
+  comment: { icon: '💬', label: 'Comentário → Direct', desc: 'Quando alguém comenta uma palavra-chave num post ou reels, o bot responde o comentário e manda uma DM.' },
+  dm_keyword: { icon: '🔑', label: 'Palavra-chave no Direct', desc: 'Quando alguém manda no Direct uma mensagem com a palavra-chave.' },
+  welcome: { icon: '👋', label: 'Boas-vindas', desc: 'Na primeira mensagem que uma pessoa te manda no Direct.' },
+  ref_link: { icon: '🔗', label: 'Link da bio / stories (ig.me)', desc: 'Um link que você coloca na bio ou no story. Quem clica abre seu Direct e recebe a mensagem.' },
+  story_reply: { icon: '📸', label: 'Resposta ao story', desc: 'Quando alguém responde um story seu (pode exigir uma palavra-chave).' },
+  story_mention: { icon: '📣', label: 'Menção no story', desc: 'Quando alguém te marca num story.' },
+  default: { icon: '🤖', label: 'Resposta padrão', desc: 'Quando nenhuma outra automação reconhece a mensagem. No máximo 1 vez a cada 24h por pessoa.' },
+  manual: { icon: '🧩', label: 'Sub-fluxo (botão)', desc: 'Só roda quando a pessoa clica num botão "Continuar fluxo" que aponta para ele. Use para criar menus e etapas.' },
+};
+const BLK = {
+  text: { icon: '📝', label: 'Texto' },
+  image: { icon: '🖼️', label: 'Imagem' },
+  card: { icon: '🃏', label: 'Cartão (imagem + título + botões)' },
+  quick: { icon: '⚡', label: 'Respostas rápidas' },
+  delay: { icon: '⏳', label: 'Pausa ("digitando…")' },
+};
+
+function newAutomation(type) {
+  const base = { name: TRIG[type].label, enabled: true, trigger: { type, keywords: [], match: 'word', posts: [], ref: '' }, once_per_user: false, public_replies: [], opening: { text: '', buttons: [] }, messages: [] };
+  switch (type) {
+    case 'comment':
+      base.name = 'Comentário → link do grupo';
+      base.trigger.keywords = ['eu quero', 'quero', 'link'];
+      base.public_replies = ['Te mandei no direct! 📩', 'Enviado! Confere seu direct 💌', 'Prontinho, olha o direct ✨'];
+      base.opening = { text: 'Oiee! 🖤✨\n\nGRUPO VIP de promoções 🌟👇\nhttps://\n\nQualquer dúvida é só me chamar aqui 💕', buttons: [] };
+      break;
+    case 'dm_keyword':
+      base.name = 'Direct: grupo';
+      base.trigger.keywords = ['grupo'];
+      base.messages = [{ type: 'text', text: 'Oi {primeiro_nome}! 💖 Aqui está o link do grupo 👇', buttons: [{ type: 'url', title: 'ENTRAR NO GRUPO 🛍️', url: '' }] }];
+      break;
+    case 'welcome':
+      base.name = 'Boas-vindas no Direct';
+      base.messages = [{ type: 'text', text: 'Oiee {primeiro_nome}! 💖 Que bom te ver por aqui!\n\nEntra no meu grupo VIP de promoções 👇', buttons: [{ type: 'url', title: 'LINK DO GRUPO 🛍️', url: '' }] }];
+      break;
+    case 'ref_link':
+      base.name = 'Link da bio';
+      base.trigger.ref = 'grupo';
+      base.messages = [{ type: 'text', text: 'Oiee! 💖 Aqui está o link do grupo VIP 👇', buttons: [{ type: 'url', title: 'LINK DO GRUPO 🛍️', url: '' }] }];
+      break;
+    case 'story_reply':
+      base.name = 'Resposta ao story';
+      base.messages = [{ type: 'text', text: 'Obrigada por responder meu story! 💖', buttons: [] }];
+      break;
+    case 'story_mention':
+      base.name = 'Menção no story';
+      base.messages = [{ type: 'text', text: 'Ahh obrigada pela menção! 🥰', buttons: [] }];
+      break;
+    case 'default':
+      base.name = 'Resposta padrão';
+      base.messages = [{ type: 'text', text: 'Oi! Recebi sua mensagem e já já te respondo 💖', buttons: [] }];
+      break;
+    case 'manual':
+      base.name = 'Sub-fluxo';
+      base.messages = [{ type: 'text', text: '', buttons: [] }];
+      break;
+  }
+  return base;
+}
+function newBlock(type) {
+  if (type === 'text') return { type, text: '', buttons: [] };
+  if (type === 'image') return { type, media_id: '', media_ext: '', url: '' };
+  if (type === 'card') return { type, title: '', subtitle: '', media_id: '', media_ext: '', url: '', buttons: [{ type: 'url', title: 'Ver agora', url: '' }] };
+  if (type === 'quick') return { type, text: 'Escolha uma opção 👇', options: [{ title: 'Opção 1', target: '' }, { title: 'Opção 2', target: '' }] };
+  return { type: 'delay', seconds: 2 };
+}
+
+// ---------------------------------------------------------------- utilidades
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('#toast').appendChild(el);
+  setTimeout(() => el.remove(), type === 'err' ? 6000 : 2800);
+}
+async function api(path, opts = {}) {
+  const init = { method: opts.method || 'GET', headers: { 'x-ib': '1' }, credentials: 'same-origin' };
+  if (opts.body !== undefined) {
+    if (opts.raw) {
+      init.body = opts.body;
+      init.headers['content-type'] = opts.type;
+      if (opts.filename) init.headers['x-filename'] = encodeURIComponent(opts.filename);
+    } else {
+      init.headers['content-type'] = 'application/json';
+      init.body = JSON.stringify(opts.body);
+    }
+  }
+  const res = await fetch('/api/' + path, init);
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (res.status === 401 && data.error === 'auth') { showLogin(!!data.setup); throw new Error('auth'); }
+  if (res.status === 503 && data.error === 'setup') { showSetup(data.detail); throw new Error('setup'); }
+  if (!res.ok) throw new Error(data.error || 'Erro ' + res.status);
+  return data;
+}
+function ago(ts) {
+  if (!ts) return 'nunca';
+  const s = Math.round((Date.now() - ts) / 1000);
+  if (s < 60) return 'agora mesmo';
+  if (s < 3600) return 'há ' + Math.round(s / 60) + ' min';
+  if (s < 86400) return 'há ' + Math.round(s / 3600) + ' h';
+  return 'há ' + Math.round(s / 86400) + ' dia(s)';
+}
+const fmtDate = (ts) => (ts ? new Date(ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+const bytes = (s) => new TextEncoder().encode(s || '').length;
+function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj); }
+function setPath(obj, path, v) {
+  const ks = path.split('.');
+  let o = obj;
+  for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]];
+  o[ks[ks.length - 1]] = v;
+}
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast('Copiado! ✅', 'ok'); }
+  catch { prompt('Copie o texto abaixo:', text); }
+}
+function fill(t, v) {
+  return String(t || '').replace(/\{(nome|primeiro_nome|username|usuario)\}/gi, (_, k) => {
+    k = k.toLowerCase();
+    return k === 'nome' ? v.name : k === 'primeiro_nome' ? v.name.split(' ')[0] : v.username;
+  });
+}
+function fmtMsg(t) {
+  return esc(t).replace(/(https?:\/\/[^\s<]+|\b[\w.-]+\.(?:com|com\.br|br|net|me|io|link|ly)(?:\/[^\s<]*)?)/g, '<span class="pv-link">$1</span>').replace(/\n/g, '<br>');
+}
+const imgSrc = (m) => (m.media_id ? '/media/' + m.media_id + '.' + (m.media_ext || 'jpg') : m.url || '');
+
+// ---------------------------------------------------------------- modais
+function modal(inner, cls = '') {
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.innerHTML = `<div class="modal ${cls}">${inner}</div>`;
+  document.body.appendChild(ov);
+  const box = ov.firstElementChild;
+  ov.addEventListener('mousedown', (e) => { if (e.target === ov) closeModal(box); });
+  box.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(box); });
+  return box;
+}
+function closeModal(box) { if (box && box.parentElement) box.parentElement.remove(); }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const ov = $$('.overlay').pop(); if (ov) ov.remove(); } });
+function confirmBox(msg, okLabel = 'Confirmar', danger = false) {
+  return new Promise((resolve) => {
+    const m = modal(`<h2>Tem certeza?</h2><p>${msg}</p><div class="modal-foot"><span class="spacer"></span><button data-close id="cb-no">Cancelar</button><button class="${danger ? 'danger' : 'primary'}" id="cb-ok">${esc(okLabel)}</button></div>`);
+    $('#cb-ok', m).onclick = () => { closeModal(m); resolve(true); };
+    $('#cb-no', m).onclick = () => resolve(false);
+  });
+}
+
+// ---------------------------------------------------------------- login / setup
+function showSetupPassword() {
+  S.st = null;
+  app.innerHTML = `<div class="login"><form class="card" id="setup-form">
+    <div class="logo">✦</div><h1>Bem-vinda ao InstaBot!</h1><p class="hint">Primeiro acesso: crie a senha do seu painel.</p>
+    <input type="password" id="pw1" placeholder="Nova senha (mín. 8 caracteres)" autocomplete="new-password" minlength="8" required autofocus>
+    <input type="password" id="pw2" placeholder="Repita a senha" autocomplete="new-password" minlength="8" required style="margin-top:8px">
+    <button class="primary" style="width:100%;margin-top:12px" type="submit">Criar senha e entrar</button>
+    <p class="hint" style="margin-top:14px">Guarde bem essa senha. Ela protege o seu bot.</p>
+  </form></div>`;
+  $('#setup-form').onsubmit = async (e) => {
+    e.preventDefault();
+    if ($('#pw1').value !== $('#pw2').value) return toast('As senhas não são iguais.', 'err');
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    try {
+      await api('setup', { method: 'POST', body: { password: $('#pw1').value } });
+      toast('Senha criada ✅', 'ok');
+      await boot();
+    } catch (err) {
+      if (err.message !== 'auth') toast(err.message, 'err');
+      btn.disabled = false;
+    }
+  };
+}
+function showLogin(setup) {
+  if (setup) return showSetupPassword();
+  S.st = null;
+  app.innerHTML = `<div class="login"><form class="card" id="login-form">
+    <div class="logo">✦</div><h1>InstaBot</h1><p class="hint">Entre com a senha do painel</p>
+    <input type="password" id="pw" placeholder="Senha" autocomplete="current-password" required autofocus>
+    <button class="primary" style="width:100%;margin-top:12px" type="submit">Entrar</button>
+    <p class="hint" style="margin-top:14px">É a senha que você criou no primeiro acesso ao painel.</p>
+  </form></div>`;
+  $('#login-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    try {
+      await api('login', { method: 'POST', body: { password: $('#pw').value } });
+      await boot();
+    } catch (err) {
+      if (err.message !== 'auth') toast(err.message, 'err');
+      btn.disabled = false;
+    }
+  };
+}
+function showSetup(detail) {
+  app.innerHTML = `<div class="login"><div class="card" style="max-width:520px;text-align:left">
+    <div class="logo">✦</div><h1 style="text-align:center">Quase lá!</h1>
+    <div class="banner warn" style="margin-top:14px">${esc(detail)}</div>
+    <p class="hint">Depois de ajustar na Cloudflare, clique em <b>Deploy</b> (ou aguarde alguns segundos) e recarregue esta página.</p>
+    <button class="primary" onclick="location.reload()">Recarregar</button></div></div>`;
+}
+
+// ---------------------------------------------------------------- layout
+const NAV = [['autos', '⚡ Automações'], ['media', '🖼️ Imagens'], ['contacts', '👥 Contatos'], ['logs', '📋 Registro'], ['settings', '⚙️ Configurações']];
+function layout(content) {
+  const acc = S.st.account;
+  const view = (location.hash.slice(1) || 'autos').split('/')[0];
+  const cur = view === 'edit' || view === 'new' ? 'autos' : view;
+  return `<header class="top"><div class="brand"><span class="logo">✦</span> InstaBot</div>
+    <nav>${NAV.map(([k, l]) => `<a href="#${k}" class="${cur === k ? 'on' : ''}">${l}</a>`).join('')}</nav>
+    <div class="acc">${acc ? `${acc.picture ? `<img src="${esc(acc.picture)}" alt="">` : ''}<span>@${esc(acc.username)}</span>` : '<a href="#settings" class="pill warn">Instagram não conectado</a>'}</div>
+  </header><main>${content}</main>`;
+}
+
+// ---------------------------------------------------------------- inicialização / rotas
+async function boot() {
+  try {
+    const st = await api('state');
+    S.st = st;
+    S.autos = st.automations;
+    route();
+  } catch (e) {
+    if (e.message !== 'auth' && e.message !== 'setup') app.innerHTML = `<div class="login"><div class="card"><h2>Ops!</h2><p>${esc(e.message)}</p><button onclick="location.reload()">Tentar de novo</button></div></div>`;
+  }
+}
+async function refreshState() {
+  const st = await api('state');
+  S.st = st;
+  S.autos = st.automations;
+}
+window.addEventListener('hashchange', () => {
+  if (S.skipHash) { S.skipHash = false; return; }
+  const leavingEditor = /^#(edit|new)/.test(S.prevHash) && S.dirty;
+  if (leavingEditor && !confirm('Você tem alterações não salvas. Sair mesmo assim?')) {
+    S.skipHash = true;
+    location.hash = S.prevHash;
+    return;
+  }
+  if (leavingEditor) S.dirty = false;
+  route();
+});
+window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
+function route() {
+  if (!S.st) return;
+  S.prevHash = location.hash;
+  const [view, arg] = (location.hash.slice(1) || 'autos').split('/');
+  window.scrollTo(0, 0);
+  if (view === 'edit' || view === 'new') return openEditor(view, arg);
+  S.draft = null;
+  S.dirty = false;
+  if (view === 'media') return renderMedia();
+  if (view === 'contacts') return renderContacts();
+  if (view === 'logs') return renderLogs();
+  if (view === 'settings') return renderSettings();
+  return renderAutos();
+}
+
+// ---------------------------------------------------------------- automações (lista)
+function summary(a) {
+  const t = a.trigger;
+  const kw = t.keywords.length ? '"' + t.keywords.slice(0, 3).join('", "') + '"' + (t.keywords.length > 3 ? ' +' + (t.keywords.length - 3) : '') : 'qualquer texto';
+  switch (t.type) {
+    case 'comment': return `Comentário com ${kw} · ${t.posts.length ? t.posts.length + ' post(s) escolhido(s)' : 'todos os posts'}`;
+    case 'dm_keyword': return `Direct com ${kw}`;
+    case 'ref_link': return `ig.me/m/${S.st.account ? S.st.account.username : 'voce'}?ref=${t.ref}`;
+    case 'story_reply': return 'Resposta ao story' + (t.keywords.length ? ' com ' + kw : '');
+    default: return TRIG[t.type].desc;
+  }
+}
+function renderAutos() {
+  const list = S.autos;
+  const warn = [];
+  if (!S.st.account) warn.push(`<div class="banner warn">⚠️ O Instagram ainda não está conectado. <a href="#settings">Ir para Configurações →</a></div>`);
+  if (!S.st.bot_enabled) warn.push(`<div class="banner warn">⏸️ O bot está desligado — nenhuma mensagem será enviada. <a href="#settings">Ligar</a></div>`);
+  app.innerHTML = layout(`${warn.join('')}
+    <div class="head-row"><h1>Automações</h1><button class="primary" data-act="new">+ Nova automação</button></div>
+    ${list.length ? `<div class="auto-list">${list.map((a, i) => `
+      <div class="auto ${a.enabled ? '' : 'off'}">
+        <div class="auto-ic">${TRIG[a.trigger.type].icon}</div>
+        <div class="auto-main" data-act="edit" data-id="${esc(a.id)}">
+          <div class="auto-name">${esc(a.name)}</div>
+          <div class="auto-sum">${esc(summary(a))}</div>
+          <div class="auto-stats">▶ ${a.runs || 0} disparo(s) · último ${ago(a.last_run)}${a.once_per_user ? ' · 1x por pessoa' : ''}</div>
+        </div>
+        <div class="auto-act">
+          <button class="icon ghost" data-act="move" data-dir="-1" data-i="${i}" ${i === 0 ? 'disabled' : ''} title="Subir prioridade">↑</button>
+          <button class="icon ghost" data-act="move" data-dir="1" data-i="${i}" ${i === list.length - 1 ? 'disabled' : ''} title="Descer prioridade">↓</button>
+          <button class="small" data-act="edit" data-id="${esc(a.id)}">Editar</button>
+          <button class="icon ghost" data-act="dup" data-id="${esc(a.id)}" title="Duplicar">⧉</button>
+          <button class="icon ghost danger" data-act="del" data-id="${esc(a.id)}" title="Excluir">🗑</button>
+          <label class="switch" title="Ligar/desligar"><input type="checkbox" data-act-change="toggle" data-id="${esc(a.id)}" ${a.enabled ? 'checked' : ''}><span></span></label>
+        </div>
+      </div>`).join('')}</div>
+      <p class="hint center" style="margin-top:14px">Se duas automações servirem para a mesma mensagem, vale a de cima (use ↑ ↓ para mudar).</p>`
+    : `<div class="card empty"><div class="big">✨</div><h2>Nenhuma automação ainda</h2><p class="hint">Comece pela mais usada: comentário vira DM.</p>
+        <div class="row" style="justify-content:center;margin-top:12px"><button class="primary" onclick="location.hash='#new/comment'">💬 Comentário → Direct</button><button onclick="location.hash='#new/welcome'">👋 Boas-vindas</button><button data-act="new">Ver todas</button></div></div>`}`);
+}
+function chooseTemplate() {
+  const m = modal(`<h2>Nova automação</h2><p class="hint">Escolha o que vai disparar a automação:</p>
+    <div class="tpl-grid">${Object.entries(TRIG).map(([k, t]) => `<button class="tpl" data-type="${k}"><span class="ic">${t.icon}</span><span><b>${t.label}</b><small>${t.desc}</small></span></button>`).join('')}</div>
+    <div class="modal-foot"><span class="spacer"></span><button data-close>Cancelar</button></div>`, 'wide');
+  m.addEventListener('click', (e) => {
+    const b = e.target.closest('.tpl');
+    if (!b) return;
+    closeModal(m);
+    location.hash = '#new/' + b.dataset.type;
+  });
+}
+
+// ---------------------------------------------------------------- editor
+function openEditor(view, arg) {
+  if (view === 'edit') {
+    const a = S.autos.find((x) => x.id === arg);
+    if (!a) { toast('Automação não encontrada', 'err'); location.hash = '#autos'; return; }
+    S.draft = JSON.parse(JSON.stringify(a));
+  } else {
+    S.draft = newAutomation(TRIG[arg] ? arg : 'comment');
+  }
+  S.dirty = view === 'new';
+  app.innerHTML = layout(`<div id="ed"></div>`) + `<div class="savebar"><div class="savebar-in"><button data-act="cancel">← Voltar</button><span class="spacer"></span><span class="hint" id="dirty-flag"></span><button class="primary" data-act="save">💾 Salvar automação</button></div></div>`;
+  renderEditorBody();
+}
+
+function varsBar(id) {
+  return `<span class="vars">Inserir: ${['{nome}', '{primeiro_nome}', '{username}'].map((v) => `<button type="button" data-act="var" data-target="${id}" data-v="${v}">${v}</button>`).join('')}</span>`;
+}
+let taSeq = 0;
+function textArea(path, value, placeholder, limitKind) {
+  const id = 'ta' + ++taSeq;
+  return `<textarea id="${id}" data-bind="${path}" data-limit="${limitKind || 'text'}" rows="5" placeholder="${esc(placeholder || 'Escreva a mensagem… (emojis e links são permitidos)')}">${esc(value)}</textarea>
+    <div class="ta-foot">${varsBar(id)}<span class="count" data-count-for="${id}"></span></div>`;
+}
+function targetSelect(path, val, allowNone) {
+  const others = S.autos.filter((a) => a.id !== S.draft.id);
+  const selfLabel = S.draft.trigger.type === 'comment' ? '▶ Mensagens do passo 4' : '↻ Repetir esta automação';
+  let opts = '';
+  if (allowNone) opts += `<option value="" ${!val ? 'selected' : ''}>— só registrar a escolha —</option>`;
+  opts += `<option value="self" ${val === 'self' || (!allowNone && !val) ? 'selected' : ''}>${selfLabel}</option>`;
+  opts += others.map((a) => `<option value="${esc(a.id)}" ${val === a.id ? 'selected' : ''}>${TRIG[a.trigger.type].icon} ${esc(a.name)}</option>`).join('');
+  return `<select data-bind="${path}">${opts}</select>`;
+}
+function buttonsEditor(path, buttons) {
+  return `<div class="btns">${buttons.map((b, i) => `
+    <div class="btn-row">
+      <select data-bind="${path}.${i}.type" data-rerender="1">
+        <option value="url" ${b.type === 'url' ? 'selected' : ''}>🔗 Abrir link</option>
+        <option value="flow" ${b.type === 'flow' ? 'selected' : ''}>▶ Continuar fluxo</option>
+      </select>
+      <input data-bind="${path}.${i}.title" maxlength="20" placeholder="Texto do botão (até 20)" value="${esc(b.title)}">
+      ${b.type === 'flow' ? targetSelect(`${path}.${i}.target`, b.target, false) : `<input data-bind="${path}.${i}.url" placeholder="https://seulink.com" value="${esc(b.url)}">`}
+      <button type="button" class="icon ghost danger" data-act="btn-del" data-path="${path}" data-i="${i}" title="Remover botão">✕</button>
+    </div>`).join('')}
+    ${buttons.length < 3 ? `<div><button type="button" class="small" data-act="btn-add" data-path="${path}">+ Adicionar botão</button> <span class="hint">até 3 botões</span></div>` : ''}
+  </div>`;
+}
+function imagePicker(path, m) {
+  const src = imgSrc(m);
+  return `<div class="imgpick">${src ? `<img src="${esc(src)}" alt="">` : '<div class="imgph">sem imagem</div>'}
+    <div class="imgpick-ctl">
+      <button type="button" class="small" data-act="img-pick" data-path="${path}">${m.media_id ? 'Trocar imagem' : '🖼️ Escolher ou enviar imagem'}</button>
+      ${src ? `<button type="button" class="small ghost danger" data-act="img-clear" data-path="${path}">Remover imagem</button>` : ''}
+      <details ${m.url && !m.media_id ? 'open' : ''}><summary>ou usar o link de uma imagem da internet</summary>
+        <input data-bind="${path}.url" placeholder="https://site.com/foto.jpg" value="${esc(m.url || '')}"></details>
+    </div></div>`;
+}
+function blockHtml(m, i, n) {
+  const p = 'messages.' + i;
+  let body = '';
+  if (m.type === 'text') body = textArea(p + '.text', m.text, '', m.buttons.length ? 'button' : 'text') + buttonsEditor(p + '.buttons', m.buttons);
+  else if (m.type === 'image') body = imagePicker(p, m) + '<p class="hint" style="margin-top:8px">JPG, PNG ou GIF. A imagem é enviada como foto no Direct.</p>';
+  else if (m.type === 'card') body = `<div class="grid2"><div><label class="lbl">Título (até 80)</label><input data-bind="${p}.title" maxlength="80" value="${esc(m.title)}" placeholder="Ex.: Cupom 50% OFF na SHEIN"></div>
+      <div><label class="lbl">Subtítulo (opcional, até 80)</label><input data-bind="${p}.subtitle" maxlength="80" value="${esc(m.subtitle)}" placeholder="Ex.: Válido só hoje"></div></div>
+      <label class="lbl">Imagem do cartão</label>${imagePicker(p, m)}<label class="lbl">Botões</label>${buttonsEditor(p + '.buttons', m.buttons)}`;
+  else if (m.type === 'quick') body = textArea(p + '.text', m.text, 'Pergunta… ex.: O que você procura?', 'text') + `<label class="lbl">Opções (botões que somem depois do clique — até 13)</label>
+      <div class="btns">${m.options.map((o, j) => `<div class="btn-row opt">
+        <input data-bind="${p}.options.${j}.title" maxlength="20" placeholder="Texto (até 20)" value="${esc(o.title)}">
+        ${targetSelect(`${p}.options.${j}.target`, o.target, true)}
+        <button type="button" class="icon ghost danger" data-act="opt-del" data-path="${p}.options" data-i="${j}">✕</button></div>`).join('')}
+        ${m.options.length < 13 ? `<div><button type="button" class="small" data-act="opt-add" data-path="${p}.options">+ Adicionar opção</button></div>` : ''}</div>
+      <p class="hint" style="margin-top:8px">Cada opção pode abrir outra automação (ex.: um "Sub-fluxo"). Se não abrir nada, o texto escolhido é tratado como uma mensagem normal (e pode bater numa palavra-chave).</p>`;
+  else if (m.type === 'delay') body = `<div class="row"><span>Esperar</span><input type="number" min="1" max="10" data-bind="${p}.seconds" value="${m.seconds}" style="width:80px"><span>segundos mostrando "digitando…"</span></div><p class="hint" style="margin-top:6px">Máximo de 10s por pausa (e ~20s somando todas).</p>`;
+  return `<div class="blk" id="blk-${i}"><div class="blk-head"><span class="blk-type">${BLK[m.type].icon} ${BLK[m.type].label}</span><span class="blk-ctl">
+      <button type="button" class="icon ghost" data-act="blk-move" data-i="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} title="Subir">↑</button>
+      <button type="button" class="icon ghost" data-act="blk-move" data-i="${i}" data-dir="1" ${i === n - 1 ? 'disabled' : ''} title="Descer">↓</button>
+      <button type="button" class="icon ghost danger" data-act="blk-del" data-i="${i}" title="Remover">✕</button></span></div>
+    <div class="blk-body">${body}</div></div>`;
+}
+function triggerFields(a) {
+  const t = a.trigger;
+  const kwInput = (label, hint) => `<label class="lbl">${label}</label>
+    <input data-bind="trigger.keywords" data-kind="list" value="${esc(t.keywords.join(', '))}" placeholder="Ex.: eu quero, quero, link">
+    <p class="hint" style="margin-top:4px">${hint}</p>
+    <label class="lbl">Como comparar</label>
+    <div class="seg">${[['word', 'Contém a palavra'], ['partial', 'Contém o trecho'], ['exact', 'Mensagem exata']].map(([k, l]) => `<button type="button" class="${t.match === k ? 'on' : ''}" data-act="match" data-v="${k}">${l}</button>`).join('')}</div>
+    <p class="hint" style="margin-top:6px">${{ word: '"quero" dispara com "eu quero!!" mas não com "queroo". Maiúsculas e acentos não importam.', partial: '"quero" dispara com qualquer texto que tenha "quero" dentro, até "queroo".', exact: 'Só dispara se a mensagem for exatamente a palavra-chave.' }[t.match]}</p>`;
+  switch (t.type) {
+    case 'comment':
+      return kwInput('Palavras-chave (separe por vírgula)', 'Deixe vazio para responder <b>qualquer</b> comentário.') + `
+        <label class="lbl">Em quais posts?</label>
+        <div class="seg"><button type="button" class="${t.posts.length ? '' : 'on'}" data-act="posts-all">Todos os posts e reels</button><button type="button" class="${t.posts.length ? 'on' : ''}" data-act="posts-pick">Escolher posts</button></div>
+        ${t.posts.length ? `<div class="posts-sel">${t.posts.map((p) => `<a href="${esc(p.permalink)}" target="_blank" rel="noopener" title="${esc(p.caption)}"><img src="${esc(p.thumb)}" alt="" onerror="this.style.visibility='hidden'"></a>`).join('')}<button type="button" class="small" data-act="posts-pick">Alterar</button></div>` : ''}`;
+    case 'dm_keyword':
+      return kwInput('Palavras-chave (separe por vírgula)', 'Obrigatório. Ex.: grupo, cupom, preço');
+    case 'story_reply':
+      return kwInput('Palavras-chave (opcional)', 'Deixe vazio para responder <b>qualquer</b> resposta ao story.');
+    case 'ref_link': {
+      const user = S.st.account ? S.st.account.username : 'seu_usuario';
+      const link = `https://ig.me/m/${user}?ref=${t.ref || 'codigo'}`;
+      return `<label class="lbl">Código do link</label><input data-bind="trigger.ref" data-rerender-blur="1" maxlength="60" value="${esc(t.ref)}" placeholder="ex.: grupo">
+        <p class="hint" style="margin-top:4px">Só letras minúsculas, números, - e _. Cada link diferente pode ter sua própria automação.</p>
+        <label class="lbl">Seu link (coloque na bio, nos stories ou onde quiser)</label>
+        <div class="copy"><input readonly value="${esc(link)}" id="ref-link"><button type="button" data-act="copy" data-src="ref-link">Copiar</button></div>
+        <p class="hint" style="margin-top:6px">Ao clicar, a pessoa abre seu Direct e recebe a mensagem. Em alguns casos o Instagram pede que ela toque em "Enviar" primeiro.</p>`;
+    }
+    default:
+      return '';
+  }
+}
+function renderEditorBody() {
+  const a = S.draft;
+  const t = a.trigger;
+  const isComment = t.type === 'comment';
+  const ed = $('#ed');
+  if (!ed) return;
+  taSeq = 0;
+  const hasFlowBtn = a.opening.buttons.some((b) => b.type === 'flow');
+  ed.innerHTML = `
+  <div class="head-row"><h1>${a.id ? 'Editar automação' : 'Nova automação'}</h1></div>
+  <div class="editor">
+    <div class="ed-main">
+      <section class="card">
+        <div class="row" style="justify-content:space-between"><div style="flex:1;min-width:220px"><label class="lbl" style="margin-top:0">Nome (só você vê)</label><input data-bind="name" value="${esc(a.name)}" maxlength="80"></div>
+          <label class="row" style="gap:8px;margin-top:18px"><label class="switch"><input type="checkbox" data-bind="enabled" ${a.enabled ? 'checked' : ''}><span></span></label> Ligada</label></div>
+      </section>
+
+      <section class="card">
+        <div class="sec-title"><span class="step">1</span><h3>Gatilho: ${TRIG[t.type].icon} ${TRIG[t.type].label}</h3></div>
+        <p class="hint">${TRIG[t.type].desc}</p>
+        ${triggerFields(a)}
+        ${t.type !== 'manual' && t.type !== 'default' ? `<label class="row" style="gap:8px;margin-top:14px"><label class="switch"><input type="checkbox" data-bind="once_per_user" ${a.once_per_user ? 'checked' : ''}><span></span></label> Enviar só <b>1 vez por pessoa</b></label>` : ''}
+      </section>
+
+      ${isComment ? `
+      <section class="card">
+        <div class="sec-title"><span class="step">2</span><h3>Resposta pública no comentário</h3></div>
+        <p class="hint">Uma por linha — o bot sorteia uma a cada comentário, para não parecer robô. Deixe vazio para não responder publicamente.</p>
+        <textarea data-bind="public_replies" data-kind="lines" rows="3" placeholder="Te mandei no direct! 📩">${esc(a.public_replies.join('\n'))}</textarea>
+      </section>
+      <section class="card">
+        <div class="sec-title"><span class="step">3</span><h3>Mensagem no Direct (resposta ao comentário)</h3></div>
+        <p class="hint">Regra da Meta: aqui vai <b>uma única mensagem</b> (texto + até 3 botões). Imagens e mais mensagens só podem ser enviadas depois que a pessoa clicar num botão ▶ <b>Continuar fluxo</b> ou responder.</p>
+        ${textArea('opening.text', a.opening.text, 'Oiee! 🖤✨ Aqui está o link…', a.opening.buttons.length ? 'button' : 'opening')}
+        ${buttonsEditor('opening.buttons', a.opening.buttons)}
+      </section>` : ''}
+
+      <section class="card">
+        <div class="sec-title"><span class="step">${isComment ? 4 : 2}</span><h3>${isComment ? 'Mensagens depois do clique (opcional)' : 'Mensagens'}</h3></div>
+        <p class="hint">${isComment ? (hasFlowBtn ? 'Enviadas quando a pessoa clicar no botão ▶ Continuar fluxo da mensagem acima.' : '⚠️ Para usar esta parte, adicione na mensagem acima um botão do tipo <b>▶ Continuar fluxo</b>.') : 'Enviadas em sequência, de cima para baixo.'}</p>
+        <div id="blocks">${a.messages.map((m, i) => blockHtml(m, i, a.messages.length)).join('') || (isComment ? '' : '<p class="hint">Nenhuma mensagem ainda — adicione abaixo.</p>')}</div>
+        <div class="add-row">${Object.entries(BLK).map(([k, b]) => `<button type="button" class="small" data-act="blk-add" data-type="${k}">+ ${b.icon} ${b.label.split(' (')[0]}</button>`).join('')}</div>
+      </section>
+    </div>
+    <aside class="ed-preview">
+      <div class="phone"><div class="phone-head">${S.st.account && S.st.account.picture ? `<img src="${esc(S.st.account.picture)}" alt="">` : '<span class="av"></span>'} ${esc(S.st.account ? S.st.account.username : 'sua_conta')}</div><div class="pv" id="preview"></div></div>
+      <p class="hint center" style="margin-top:8px">Prévia aproximada de como chega no Direct</p>
+    </aside>
+  </div>`;
+  $$('textarea[data-limit]', ed).forEach(updateCounter);
+  renderPreview();
+  updateDirty();
+}
+function updateDirty() { const f = $('#dirty-flag'); if (f) f.textContent = S.dirty ? 'Alterações não salvas' : ''; }
+function updateCounter(ta) {
+  const el = $(`[data-count-for="${ta.id}"]`);
+  if (!el) return;
+  const kind = ta.dataset.limit;
+  if (kind === 'button') {
+    const n = [...ta.value].length;
+    el.textContent = `${n} / 640 caracteres (mensagem com botões)`;
+    el.classList.toggle('over', n > 640);
+  } else {
+    const n = bytes(ta.value);
+    el.textContent = `${n} / 1000` + (kind === 'opening' ? ' (limite)' : n > 1000 ? ' — será dividida em mais mensagens' : '');
+    el.classList.toggle('over', kind === 'opening' ? n > 1000 : false);
+  }
+}
+function renderPreview() {
+  const box = $('#preview');
+  if (!box || !S.draft) return;
+  const a = S.draft;
+  const v = { username: 'maria.silva', name: 'Maria Silva' };
+  let h = '';
+  const bubble = (m) => {
+    if (m.type === 'delay') return '<div class="pv-typing"><span></span><span></span><span></span></div>';
+    if (m.type === 'image') { const src = imgSrc(m); return src ? `<div class="pv-img"><img src="${esc(src)}" alt=""></div>` : '<div class="pv-bot hint">[imagem]</div>'; }
+    if (m.type === 'card') { const src = imgSrc(m); return `<div class="pv-card">${src ? `<img src="${esc(src)}" alt="">` : ''}<div class="pc-b"><div class="pc-t">${esc(fill(m.title, v) || 'Título')}</div>${m.subtitle ? `<div class="pc-s">${esc(fill(m.subtitle, v))}</div>` : ''}${m.buttons.map((b) => `<div class="pv-btn">${esc(b.title || 'Botão')}</div>`).join('')}</div></div>`; }
+    if (m.type === 'quick') return `<div class="pv-bot">${fmtMsg(fill(m.text, v) || '👇')}</div>${m.options.length ? `<div class="pv-qr">${m.options.map((o) => `<span>${esc(o.title || '…')}</span>`).join('')}</div>` : ''}`;
+    if (!m.text && !(m.buttons || []).length) return '';
+    return `<div class="pv-bot">${fmtMsg(fill(m.text, v))}${(m.buttons || []).map((b) => `<div class="pv-btn">${b.type === 'url' ? '🔗 ' : ''}${esc(b.title || 'Botão')}</div>`).join('')}</div>`;
+  };
+  const t = a.trigger;
+  if (t.type === 'comment') {
+    h += `<div class="pv-note">💬 <b>@maria.silva</b> comentou: “${esc(t.keywords[0] || 'qualquer coisa')}”</div>`;
+    if (a.public_replies.length) h += `<div class="pv-note">↪️ Você respondeu no post: “${esc(fill(a.public_replies[0], v))}”</div>`;
+    h += bubble({ type: 'text', text: a.opening.text, buttons: a.opening.buttons });
+    if (a.messages.length) h += '<div class="pv-sep">depois que ela clicar em ▶</div>' + a.messages.map(bubble).join('');
+  } else {
+    const intro = { dm_keyword: t.keywords[0] || 'oi', welcome: 'Oii, tudo bem?', ref_link: '(clicou no link da bio)', story_reply: '🔥🔥 (respondeu seu story)', story_mention: '(te marcou num story)', default: 'uma mensagem qualquer', manual: '(clicou num botão)' }[t.type];
+    h += `<div class="pv-user">${esc(intro)}</div>` + a.messages.map(bubble).join('');
+  }
+  box.innerHTML = h;
+}
+
+function validateDraft() {
+  const a = S.draft;
+  const t = a.trigger;
+  const errs = [];
+  const btnErr = (btns, where) => btns.forEach((b, i) => {
+    if (!b.title.trim()) errs.push(`${where}: o botão ${i + 1} está sem texto.`);
+    if (b.type === 'url' && !b.url.trim()) errs.push(`${where}: o botão "${b.title || i + 1}" está sem link.`);
+  });
+  if (t.type === 'dm_keyword' && !t.keywords.length) errs.push('Coloque pelo menos uma palavra-chave.');
+  if (t.type === 'ref_link' && !t.ref) errs.push('Defina o código do link.');
+  if (t.type === 'comment') {
+    if (!a.opening.text.trim() && !a.opening.buttons.length && !a.public_replies.length) errs.push('Escreva a mensagem do Direct (passo 3) ou uma resposta pública (passo 2).');
+    if (a.opening.buttons.length && [...a.opening.text].length > 640) errs.push('A mensagem do passo 3 passou de 640 caracteres (limite com botões).');
+    if (!a.opening.buttons.length && bytes(a.opening.text) > 1000) errs.push('A mensagem do passo 3 passou do limite de 1000.');
+    btnErr(a.opening.buttons, 'Passo 3');
+  } else if (!a.messages.length) errs.push('Adicione pelo menos uma mensagem.');
+  a.messages.forEach((m, i) => {
+    const w = `Mensagem ${i + 1}`;
+    if (m.type === 'text') { if (!m.text.trim() && !m.buttons.length) errs.push(`${w}: texto vazio.`); btnErr(m.buttons, w); }
+    if (m.type === 'image' && !m.media_id && !m.url) errs.push(`${w}: escolha uma imagem.`);
+    if (m.type === 'card') { if (!m.title.trim()) errs.push(`${w}: o cartão precisa de um título.`); btnErr(m.buttons, w); }
+    if (m.type === 'quick' && !m.options.length) errs.push(`${w}: adicione pelo menos uma opção.`);
+  });
+  return errs;
+}
+async function saveDraft() {
+  const errs = validateDraft();
+  if (errs.length) {
+    modal(`<h2>Falta pouco 🙂</h2><ul>${errs.map((e) => `<li>${esc(e)}</li>`).join('')}</ul><div class="modal-foot"><span class="spacer"></span><button class="primary" data-close>Ok</button></div>`);
+    return;
+  }
+  const a = S.draft;
+  if (a.trigger.type === 'comment' && a.messages.length && !a.opening.buttons.some((b) => b.type === 'flow')) {
+    const ok = await confirmBox('As mensagens do passo 4 só são enviadas se a mensagem do passo 3 tiver um botão <b>▶ Continuar fluxo</b>. Salvar mesmo assim?', 'Salvar assim');
+    if (!ok) return;
+  }
+  const btn = $('[data-act="save"]');
+  btn.disabled = true;
+  try {
+    const saved = a.id ? await api('automations/' + a.id, { method: 'PUT', body: a }) : await api('automations', { method: 'POST', body: a });
+    S.dirty = false;
+    await refreshState();
+    toast('Automação salva! ✅', 'ok');
+    if (!a.id) { S.prevHash = '#edit/' + saved.id; S.skipHash = true; location.hash = '#edit/' + saved.id; S.draft.id = saved.id; renderEditorBody(); }
+    else { S.draft = JSON.parse(JSON.stringify(S.autos.find((x) => x.id === saved.id) || saved)); renderEditorBody(); }
+  } catch (e) {
+    if (e.message !== 'auth') toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------- imagens
+async function prepareImage(file) {
+  if (file.type === 'image/gif') {
+    if (file.size > 8e6) throw new Error(file.name + ': GIF maior que 8 MB.');
+    return { blob: file, type: 'image/gif' };
+  }
+  let img;
+  try {
+    img = await createImageBitmap(file);
+  } catch {
+    throw new Error(file.name + ': formato não suportado. Use JPG ou PNG.');
+  }
+  const max = 1440;
+  const sc = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * sc);
+  c.height = Math.round(img.height * sc);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  let q = 0.88, blob;
+  do { blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', q)); q -= 0.12; } while (blob.size > 3e6 && q > 0.4);
+  return { blob, type: 'image/jpeg' };
+}
+async function uploadFiles(files) {
+  const out = [];
+  for (const f of files) {
+    try {
+      toast('Enviando ' + f.name + '…');
+      const { blob, type } = await prepareImage(f);
+      const name = f.name.replace(/\.(heic|png|webp|jpeg|jpg|gif)$/i, '') + (type === 'image/gif' ? '.gif' : '.jpg');
+      out.push(await api('media', { method: 'POST', raw: true, body: blob, type, filename: name }));
+    } catch (e) {
+      if (e.message !== 'auth') toast(e.message, 'err');
+    }
+  }
+  if (out.length) toast(out.length + ' imagem(ns) enviada(s) ✅', 'ok');
+  return out;
+}
+function openGallery(onPick) {
+  const m = modal(`<h2>Escolher imagem</h2>
+    ${S.st.media_enabled ? '<label class="upload"><input type="file" accept="image/*" multiple hidden id="gal-file"><span>⬆️ Enviar imagem do computador</span></label>' : '<div class="banner warn">O armazenamento de imagens (KV "MEDIA") ainda não foi ligado ao Worker. Veja o guia — ou use o link de uma imagem.</div>'}
+    <div class="gal-grid" id="gal"><span class="spinner"></span></div>
+    <div class="modal-foot"><span class="spacer"></span><button data-close>Fechar</button></div>`, 'wide');
+  async function draw() {
+    try {
+      const d = await api('media');
+      S.media = d.items;
+      $('#gal', m).innerHTML = d.items.length ? d.items.map((x) => `<button class="gal-item" data-id="${esc(x.id)}"><img src="/media/${esc(x.id)}.${esc(x.ext)}" loading="lazy" alt=""><span>${esc(x.name)}</span></button>`).join('') : '<p class="hint">Nenhuma imagem ainda. Envie a primeira acima.</p>';
+    } catch (e) { $('#gal', m).innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
+  }
+  $('#gal', m).addEventListener('click', (e) => {
+    const b = e.target.closest('.gal-item');
+    if (!b) return;
+    const x = S.media.find((i) => i.id === b.dataset.id);
+    closeModal(m);
+    onPick(x);
+  });
+  const f = $('#gal-file', m);
+  if (f) f.onchange = async () => {
+    const up = await uploadFiles(f.files);
+    f.value = '';
+    if (up.length === 1) { closeModal(m); onPick(up[0]); } else draw();
+  };
+  draw();
+}
+async function renderMedia() {
+  app.innerHTML = layout(`<div class="head-row"><h1>Imagens</h1></div>
+    ${S.st.media_enabled ? '<label class="upload card" style="box-shadow:none"><input type="file" accept="image/*" multiple hidden id="up-file"><span>⬆️ Clique para enviar imagens (JPG, PNG ou GIF)</span></label>' : '<div class="banner warn">O armazenamento de imagens (binding KV com o nome <b>MEDIA</b>) ainda não foi ligado ao Worker. Veja o passo 4 do guia.</div>'}
+    <div class="gal-grid" id="media-grid" style="max-height:none"><span class="spinner"></span></div>`);
+  const f = $('#up-file');
+  if (f) f.onchange = async () => { await uploadFiles(f.files); f.value = ''; drawMedia(); };
+  drawMedia();
+}
+async function drawMedia() {
+  const g = $('#media-grid');
+  try {
+    const d = await api('media');
+    S.media = d.items;
+    g.innerHTML = d.items.length ? d.items.map((x) => `<div class="gal-item card" style="padding:0;margin:0"><img src="/media/${esc(x.id)}.${esc(x.ext)}" loading="lazy" alt=""><span>${esc(x.name)} · ${(x.size / 1024).toFixed(0)} KB</span>
+      <div class="gal-ctl"><button class="small" data-act="copy-text" data-text="${esc(x.url)}">Copiar link</button><button class="small ghost danger" data-act="media-del" data-id="${esc(x.id)}">Excluir</button></div></div>`).join('') : '<p class="hint">Nenhuma imagem ainda.</p>';
+  } catch (e) { if (e.message !== 'auth') g.innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
+}
+
+// ---------------------------------------------------------------- posts
+function openPostsPicker() {
+  const sel = new Map(S.draft.trigger.posts.map((p) => [p.id, p]));
+  let items = [];
+  let after = null;
+  const m = modal(`<h2>Escolher posts e reels</h2><p class="hint">Marque onde essa automação vale. Clique de novo para desmarcar.</p>
+    <div class="posts-grid" id="pg"><span class="spinner"></span></div>
+    <div class="modal-foot"><button id="pg-more" class="ghost" hidden>Carregar mais</button><span class="spacer"></span><button data-close>Cancelar</button><button class="primary" id="pg-ok">Usar selecionados</button></div>`, 'wide');
+  const typeLabel = (p) => (p.media_product_type === 'REELS' ? 'Reels' : p.media_type === 'CAROUSEL_ALBUM' ? 'Carrossel' : p.media_type === 'VIDEO' ? 'Vídeo' : 'Post');
+  function draw() {
+    $('#pg', m).innerHTML = items.length ? items.map((p) => `<div class="post ${sel.has(p.id) ? 'on' : ''}" data-id="${esc(p.id)}"><img src="${esc(p.thumbnail_url || p.media_url || '')}" loading="lazy" alt=""><span class="post-type">${typeLabel(p)}</span><span class="post-cap">${esc((p.caption || 'sem legenda').slice(0, 60))}</span></div>`).join('') : '<p class="hint">Nenhum post encontrado.</p>';
+    $('#pg-more', m).hidden = !after;
+  }
+  async function load() {
+    try {
+      const d = await api('posts' + (after ? '?after=' + encodeURIComponent(after) : ''));
+      items = items.concat(d.items);
+      after = d.after;
+      draw();
+    } catch (e) { if (e.message !== 'auth') $('#pg', m).innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
+  }
+  $('#pg', m).addEventListener('click', (e) => {
+    const el = e.target.closest('.post');
+    if (!el) return;
+    const id = el.dataset.id;
+    if (sel.has(id)) sel.delete(id);
+    else { const p = items.find((x) => x.id === id); sel.set(id, { id, caption: (p.caption || '').slice(0, 120), thumb: p.thumbnail_url || p.media_url || '', permalink: p.permalink || '' }); }
+    el.classList.toggle('on');
+  });
+  $('#pg-more', m).onclick = load;
+  $('#pg-ok', m).onclick = () => { S.draft.trigger.posts = [...sel.values()]; S.dirty = true; closeModal(m); renderEditorBody(); };
+  load();
+}
+
+// ---------------------------------------------------------------- contatos
+async function renderContacts() {
+  app.innerHTML = layout(`<div class="head-row"><h1>Contatos</h1><button data-act="export-csv">⬇️ Exportar planilha (CSV)</button></div>
+    <input class="search" id="c-q" placeholder="🔎 Buscar por @usuário ou nome"><div id="c-list"><span class="spinner"></span></div>`);
+  let timer;
+  $('#c-q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(drawContacts, 300); });
+  drawContacts();
+}
+async function drawContacts() {
+  const q = $('#c-q') ? $('#c-q').value.trim() : '';
+  const box = $('#c-list');
+  try {
+    const d = await api('contacts' + (q ? '?q=' + encodeURIComponent(q) : ''));
+    box.innerHTML = `<p class="hint">${d.total} contato(s)${d.total > d.items.length ? ' — mostrando os ' + d.items.length + ' mais recentes' : ''}</p>` + (d.items.length ? `<div class="table-wrap"><table><thead><tr><th>Usuário</th><th>Nome</th><th>Veio por</th><th>Primeira vez</th><th>Última interação</th><th>Interações</th></tr></thead><tbody>
+      ${d.items.map((c) => `<tr><td>${c.username ? `<a href="https://instagram.com/${esc(c.username)}" target="_blank" rel="noopener">@${esc(c.username)}</a>` : '<span class="hint">' + esc(c.id) + '</span>'}</td><td>${esc(c.name || '')}</td><td>${esc(c.source || '')}</td><td>${fmtDate(c.first_seen)}</td><td>${ago(c.last_seen)}</td><td>${c.interactions || 0}</td></tr>`).join('')}</tbody></table></div>` : '<div class="card empty"><div class="big">👥</div><p class="hint">Os contatos aparecem aqui quando alguém comenta ou manda mensagem.</p></div>');
+  } catch (e) { if (e.message !== 'auth') box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
+}
+async function exportCsv() {
+  const d = await api('contacts?all=1');
+  const rows = [['usuario', 'nome', 'origem', 'primeira_vez', 'ultima_interacao', 'interacoes', 'id']];
+  d.items.forEach((c) => rows.push([c.username || '', c.name || '', c.source || '', fmtDate(c.first_seen), fmtDate(c.last_seen), c.interactions || 0, c.id]));
+  const csv = '﻿' + rows.map((r) => r.map((x) => '"' + String(x).replace(/"/g, '""') + '"').join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'contatos-instabot.csv';
+  a.click();
+}
+
+// ---------------------------------------------------------------- registro
+async function renderLogs() {
+  app.innerHTML = layout(`<div class="head-row"><h1>Registro</h1><button data-act="logs-reload">↻ Atualizar</button><button class="ghost danger" data-act="logs-clear">Limpar</button></div>
+    <p class="hint">Tudo o que o bot fez (e os erros, com a explicação). Útil para testar.</p><div class="logs" id="logs"><span class="spinner"></span></div>`);
+  drawLogs();
+}
+const LV = { ok: ['ok', '✅ ok'], info: ['info', 'ℹ️ info'], aviso: ['warn', '⚠️ aviso'], erro: ['err', '❌ erro'] };
+async function drawLogs() {
+  const box = $('#logs');
+  try {
+    const d = await api('logs');
+    box.innerHTML = d.items.length ? d.items.map((l) => {
+      const lv = LV[l.level] || ['', l.level];
+      let data = l.data || '';
+      try { if (data && /^[\[{]/.test(data)) data = JSON.stringify(JSON.parse(data), null, 2); } catch {}
+      return `<div class="log"><span class="pill ${lv[0]}">${lv[1]}</span><time>${fmtDate(l.ts)} · ${ago(l.ts)}</time><div class="msg">${esc(l.msg)}</div>${data ? `<details><summary>detalhes</summary><pre>${esc(data)}</pre></details>` : ''}</div>`;
+    }).join('') : '<div class="card empty"><div class="big">📋</div><p class="hint">Nada registrado ainda.</p></div>';
+  } catch (e) { if (e.message !== 'auth') box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
+}
+
+// ---------------------------------------------------------------- configurações
+function renderSettings() {
+  const st = S.st;
+  const acc = st.account;
+  const ck = (ok, label, extra = '') => `<div class="check"><span class="st">${ok ? '✅' : '⬜'}</span><span class="tx">${label}${extra ? `<div class="hint">${extra}</div>` : ''}</span></div>`;
+  const tokenDays = acc && acc.token_updated_at ? Math.floor((Date.now() - acc.token_updated_at) / 864e5) : null;
+  const copyField = (id, val) => `<div class="copy"><input readonly id="${id}" value="${esc(val)}"><button type="button" data-act="copy" data-src="${id}">Copiar</button></div>`;
+  app.innerHTML = layout(`<div class="head-row"><h1>Configurações</h1></div>
+  <section class="card">
+    <h2>Situação</h2>
+    ${ck(true, 'Banco de dados (D1) ligado')}
+    ${ck(st.media_enabled, 'Armazenamento de imagens (KV "MEDIA") ligado', st.media_enabled ? '' : 'Opcional, mas necessário para enviar imagens pelo painel.')}
+    ${ck(!!acc, 'Instagram conectado', acc ? '@' + esc(acc.username) : 'Cole o token no passo 1 abaixo.')}
+    ${ck(!!st.webhook_verified_at, 'Webhook verificado pela Meta', st.webhook_verified_at ? 'em ' + fmtDate(st.webhook_verified_at) : 'Faça o passo 2 abaixo no painel da Meta.')}
+    ${ck(!!st.last_event_at, 'Recebendo eventos do Instagram', st.last_event_at ? 'último ' + ago(st.last_event_at) : 'Assim que alguém comentar ou mandar mensagem, aparece aqui.')}
+    ${ck(st.app_secret_set, 'Chave secreta do app configurada (segurança)', st.app_secret_set ? '' : 'Recomendado — passo 3.')}
+    <div class="row" style="margin-top:14px;justify-content:space-between"><label class="row" style="gap:10px"><label class="switch"><input type="checkbox" data-act-change="bot-toggle" ${st.bot_enabled ? 'checked' : ''}><span></span></label><b>Bot ${st.bot_enabled ? 'ligado' : 'desligado'}</b></label><span class="hint">Desligado = recebe os eventos mas não responde nada.</span></div>
+  </section>
+
+  <section class="card">
+    <h2>1. Conectar o Instagram</h2>
+    ${acc ? `<div class="acc-card">${acc.picture ? `<img src="${esc(acc.picture)}" alt="">` : ''}<div style="flex:1"><b>@${esc(acc.username)}</b><div class="hint">${esc(acc.name || '')} · ID ${esc(acc.id)}</div><div class="hint">Token atualizado ${tokenDays === null ? '—' : tokenDays === 0 ? 'hoje' : 'há ' + tokenDays + ' dia(s)'} · renova sozinho antes de vencer</div></div></div>
+      <div class="row" style="margin-top:12px"><button data-act="refresh-token">↻ Renovar token agora</button><button data-act="resubscribe">↻ Assinar eventos de novo</button><button class="ghost danger" data-act="disconnect">Desconectar</button></div>
+      <details style="margin-top:14px"><summary class="hint" style="cursor:pointer">Trocar de token / conta</summary>` : '<p class="hint">No painel da Meta: <b>API com login do Instagram → Gerar tokens de acesso → Adicionar conta → Gerar token</b>. Copie o token e cole aqui:</p>'}
+    <textarea id="tok" rows="3" placeholder="Cole aqui o token de acesso (começa com IG…)" style="margin-top:8px"></textarea>
+    <button class="primary" data-act="connect" style="margin-top:8px">Conectar</button>
+    ${acc ? '</details>' : ''}
+  </section>
+
+  <section class="card">
+    <h2>2. Webhook (cole no painel da Meta)</h2>
+    <p class="hint">Em <b>API com login do Instagram → Configurar webhooks</b>:</p>
+    <label class="lbl">URL de retorno de chamada (Callback URL)</label>${copyField('wh-url', st.webhook_url)}
+    <label class="lbl">Token de verificação (Verify token)</label>${copyField('wh-tok', st.verify_token)}
+    <p class="hint" style="margin-top:10px">Depois de clicar em <b>Verificar e salvar</b>, ative as assinaturas destes campos: ${st.subscribe_fields.map((f) => `<code>${f}</code>`).join(', ')}.</p>
+  </section>
+
+  <section class="card">
+    <h2>3. Chave secreta do app (recomendado)</h2>
+    <p class="hint">Garante que só a Meta consegue mandar eventos para o seu bot. Fica na mesma página da Meta: <b>Chave secreta do app do Instagram</b>. ${st.app_secret_set ? '<span class="pill ok">configurada</span>' : ''}</p>
+    <div class="copy"><input type="password" id="secret" placeholder="${st.app_secret_set ? '•••••••• (deixe vazio e salve para remover)' : 'Cole a chave secreta aqui'}" autocomplete="off"><button data-act="save-secret">Salvar</button></div>
+    <p class="hint" style="margin-top:8px">Se o Registro mostrar "assinatura inválida", a chave está errada — apague o campo e salve para desativar a checagem.</p>
+  </section>
+
+  <section class="card">
+    <h2>4. Links exigidos pela Meta</h2>
+    <p class="hint">Em <b>Configurações do app → Básico</b>:</p>
+    <label class="lbl">URL da Política de Privacidade</label>${copyField('pp-url', st.privacy_url)}
+    <label class="lbl">URL de exclusão de dados do usuário</label>${copyField('del-url', st.deletion_url)}
+  </section>
+
+  ${st.password_in_cloudflare ? '' : `<section class="card">
+    <h2>Senha do painel</h2>
+    <div class="grid2"><input type="password" id="pw-cur" placeholder="Senha atual" autocomplete="current-password"><span></span>
+    <input type="password" id="pw-new" placeholder="Nova senha (mín. 8)" autocomplete="new-password"><input type="password" id="pw-new2" placeholder="Repita a nova senha" autocomplete="new-password"></div>
+    <button data-act="change-pw" style="margin-top:10px">Trocar senha</button>
+  </section>`}
+
+  <section class="card"><div class="row"><span class="hint" style="flex:1">Sair deste navegador</span><button data-act="logout">Sair</button></div></section>`);
+}
+
+// ---------------------------------------------------------------- ações (cliques)
+const ACT = {
+  new: () => chooseTemplate(),
+  edit: (el) => { location.hash = '#edit/' + el.dataset.id; },
+  async dup(el) {
+    const a = S.autos.find((x) => x.id === el.dataset.id);
+    const c = JSON.parse(JSON.stringify(a));
+    delete c.id;
+    c.name = a.name + ' (cópia)';
+    c.enabled = false;
+    await api('automations', { method: 'POST', body: c });
+    await refreshState();
+    renderAutos();
+    toast('Duplicada (desligada) ✅', 'ok');
+  },
+  async del(el) {
+    const a = S.autos.find((x) => x.id === el.dataset.id);
+    if (!(await confirmBox(`Excluir a automação <b>${esc(a.name)}</b>? Isso não pode ser desfeito.`, 'Excluir', true))) return;
+    await api('automations/' + a.id, { method: 'DELETE' });
+    await refreshState();
+    renderAutos();
+    toast('Excluída', 'ok');
+  },
+  async move(el) {
+    const i = +el.dataset.i;
+    const j = i + +el.dataset.dir;
+    const ids = S.autos.map((a) => a.id);
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    await api('automations/reorder', { method: 'POST', body: { ids } });
+    await refreshState();
+    renderAutos();
+  },
+  cancel: () => { location.hash = '#autos'; },
+  save: () => saveDraft(),
+  match(el) { S.draft.trigger.match = el.dataset.v; S.dirty = true; renderEditorBody(); },
+  'posts-all'() { S.draft.trigger.posts = []; S.dirty = true; renderEditorBody(); },
+  'posts-pick'() {
+    if (!S.st.account) return toast('Conecte o Instagram primeiro (Configurações).', 'err');
+    openPostsPicker();
+  },
+  'blk-add'(el) {
+    S.draft.messages.push(newBlock(el.dataset.type));
+    S.dirty = true;
+    renderEditorBody();
+    const last = $('#blk-' + (S.draft.messages.length - 1));
+    if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+  'blk-del'(el) { S.draft.messages.splice(+el.dataset.i, 1); S.dirty = true; renderEditorBody(); },
+  'blk-move'(el) {
+    const i = +el.dataset.i;
+    const j = i + +el.dataset.dir;
+    const ms = S.draft.messages;
+    [ms[i], ms[j]] = [ms[j], ms[i]];
+    S.dirty = true;
+    renderEditorBody();
+  },
+  'btn-add'(el) {
+    const list = getPath(S.draft, el.dataset.path);
+    list.push(S.draft.trigger.type === 'comment' && el.dataset.path === 'opening.buttons' && list.length && !list.some((b) => b.type === 'flow') ? { type: 'flow', title: 'Quero! 💖', target: 'self' } : { type: 'url', title: '', url: '' });
+    S.dirty = true;
+    renderEditorBody();
+  },
+  'btn-del'(el) { getPath(S.draft, el.dataset.path).splice(+el.dataset.i, 1); S.dirty = true; renderEditorBody(); },
+  'opt-add'(el) { getPath(S.draft, el.dataset.path).push({ title: '', target: '' }); S.dirty = true; renderEditorBody(); },
+  'opt-del'(el) { getPath(S.draft, el.dataset.path).splice(+el.dataset.i, 1); S.dirty = true; renderEditorBody(); },
+  'img-pick'(el) {
+    openGallery((x) => {
+      const m = getPath(S.draft, el.dataset.path);
+      m.media_id = x.id;
+      m.media_ext = x.ext;
+      m.url = '';
+      S.dirty = true;
+      renderEditorBody();
+    });
+  },
+  'img-clear'(el) { const m = getPath(S.draft, el.dataset.path); m.media_id = ''; m.media_ext = ''; m.url = ''; S.dirty = true; renderEditorBody(); },
+  var(el) {
+    const ta = document.getElementById(el.dataset.target);
+    if (!ta) return;
+    const s = ta.selectionStart ?? ta.value.length;
+    const e = ta.selectionEnd ?? ta.value.length;
+    ta.value = ta.value.slice(0, s) + el.dataset.v + ta.value.slice(e);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = s + el.dataset.v.length;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  },
+  copy: (el) => copy(document.getElementById(el.dataset.src).value),
+  'copy-text': (el) => copy(el.dataset.text),
+  async 'media-del'(el) {
+    if (!(await confirmBox('Excluir esta imagem? Automações que usam ela vão ficar sem a imagem.', 'Excluir', true))) return;
+    await api('media/' + el.dataset.id, { method: 'DELETE' });
+    drawMedia();
+  },
+  'export-csv': () => exportCsv().catch((e) => toast(e.message, 'err')),
+  'logs-reload': () => drawLogs(),
+  async 'logs-clear'() {
+    if (!(await confirmBox('Apagar todo o registro?', 'Apagar', true))) return;
+    await api('logs', { method: 'DELETE' });
+    drawLogs();
+  },
+  async connect(el) {
+    const token = $('#tok').value.trim();
+    if (!token) return toast('Cole o token primeiro.', 'err');
+    el.disabled = true;
+    el.innerHTML = '<span class="spinner"></span> Conectando…';
+    try {
+      const r = await api('connect', { method: 'POST', body: { token } });
+      await refreshState();
+      renderSettings();
+      if (r.subscribe && r.subscribe.ok) toast('Conectado como @' + r.account.username + ' ✅', 'ok');
+      else toast('Conectado, mas não consegui assinar os eventos: ' + (r.subscribe && r.subscribe.error), 'err');
+    } catch (e) {
+      if (e.message !== 'auth') toast(e.message, 'err');
+      el.disabled = false;
+      el.textContent = 'Conectar';
+    }
+  },
+  async disconnect() {
+    if (!(await confirmBox('Desconectar o Instagram? O bot para de responder até você conectar de novo.', 'Desconectar', true))) return;
+    await api('disconnect', { method: 'POST', body: {} });
+    await refreshState();
+    renderSettings();
+  },
+  async 'refresh-token'(el) {
+    el.disabled = true;
+    try {
+      const r = await api('refresh-token', { method: 'POST', body: {} });
+      if (r.ok) toast('Token renovado ✅', 'ok');
+      else toast(r.error || 'Não foi possível renovar', 'err');
+      await refreshState();
+      renderSettings();
+    } catch (e) { if (e.message !== 'auth') toast(e.message, 'err'); el.disabled = false; }
+  },
+  async resubscribe(el) {
+    el.disabled = true;
+    try { const r = await api('subscribe', { method: 'POST', body: {} }); toast('Eventos assinados: ' + r.fields.join(', '), 'ok'); }
+    catch (e) { if (e.message !== 'auth') toast(e.message, 'err'); }
+    el.disabled = false;
+  },
+  async 'save-secret'() {
+    const v = $('#secret').value.trim();
+    await api('settings', { method: 'POST', body: { app_secret: v } });
+    await refreshState();
+    renderSettings();
+    toast(v ? 'Chave salva ✅' : 'Checagem de assinatura desativada', 'ok');
+  },
+  async logout() {
+    await api('logout', { method: 'POST', body: {} });
+    showLogin();
+  },
+  async 'change-pw'() {
+    const cur = $('#pw-cur').value, nw = $('#pw-new').value;
+    if (nw.length < 8) return toast('A nova senha precisa ter pelo menos 8 caracteres.', 'err');
+    if (nw !== $('#pw-new2').value) return toast('As novas senhas não são iguais.', 'err');
+    await api('password', { method: 'POST', body: { current: cur, password: nw } });
+    ['#pw-cur', '#pw-new', '#pw-new2'].forEach((s) => ($(s).value = ''));
+    toast('Senha alterada ✅', 'ok');
+  },
+};
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const fn = ACT[el.dataset.act];
+  if (!fn) return;
+  e.preventDefault();
+  Promise.resolve(fn(el, e)).catch((err) => { if (err && err.message !== 'auth' && err.message !== 'setup') toast(err.message, 'err'); });
+});
+document.addEventListener('change', async (e) => {
+  const el = e.target;
+  if (el.dataset.actChange === 'toggle') {
+    const a = S.autos.find((x) => x.id === el.dataset.id);
+    a.enabled = el.checked;
+    try { await api('automations/' + a.id, { method: 'PUT', body: a }); el.closest('.auto').classList.toggle('off', !a.enabled); toast(a.enabled ? 'Ligada ✅' : 'Desligada', 'ok'); }
+    catch (err) { el.checked = !el.checked; a.enabled = el.checked; if (err.message !== 'auth') toast(err.message, 'err'); }
+    return;
+  }
+  if (el.dataset.actChange === 'bot-toggle') {
+    try { await api('settings', { method: 'POST', body: { bot_enabled: el.checked } }); await refreshState(); renderSettings(); toast(el.checked ? 'Bot ligado ✅' : 'Bot desligado', 'ok'); }
+    catch (err) { if (err.message !== 'auth') toast(err.message, 'err'); }
+    return;
+  }
+  if (el.dataset.bind && S.draft) {
+    bindInput(el);
+    if (el.dataset.rerender || el.dataset.rerenderBlur) renderEditorBody();
+  }
+});
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (el.dataset && el.dataset.bind && S.draft && el.tagName !== 'SELECT' && el.type !== 'checkbox') bindInput(el);
+});
+function bindInput(el) {
+  let v;
+  if (el.type === 'checkbox') v = el.checked;
+  else if (el.dataset.kind === 'list') v = el.value.split(',').map((x) => x.trim()).filter(Boolean);
+  else if (el.dataset.kind === 'lines') v = el.value.split('\n').map((x) => x.trim()).filter(Boolean);
+  else if (el.type === 'number') v = Number(el.value) || 1;
+  else v = el.value;
+  setPath(S.draft, el.dataset.bind, v);
+  S.dirty = true;
+  updateDirty();
+  if (el.tagName === 'TEXTAREA' && el.dataset.limit) updateCounter(el);
+  if (el.dataset.bind === 'trigger.ref') {
+    const clean = el.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    S.draft.trigger.ref = clean;
+    const l = $('#ref-link');
+    if (l) l.value = `https://ig.me/m/${S.st.account ? S.st.account.username : 'seu_usuario'}?ref=${clean || 'codigo'}`;
+  }
+  renderPreview();
+}
+
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  // Configuração do Cloudflare Worker do InstaBot.
+  // O banco (D1) e o armazenamento de imagens (KV) são criados automaticamente no primeiro deploy.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "instabot",
+  "main": "worker.js",
+  "compatibility_date": "2025-10-01",
+  "workers_dev": true,
+  "d1_databases": [
+    { "binding": "DB", "database_name": "instabot-db" }
+  ],
+  "kv_namespaces": [
+    { "binding": "MEDIA" }
+  ],
+  // Renova o token do Instagram e limpa registros antigos uma vez por dia.
+  "triggers": { "crons": ["17 9 * * *"] },
+  "observability": { "enabled": true }
+}

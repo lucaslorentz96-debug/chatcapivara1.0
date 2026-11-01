@@ -23,7 +23,6 @@ O código já está no repositório **`lucaslorentz96-debug/chatcapivara1.0`**.
 2. Escolha **Import a repository** (Importar repositório) e depois **GitHub**.
    - Se o `chatcapivara1.0` não aparecer na lista, clique em **Add account / Configure GitHub app** (ou "Gerenciar acesso"). No GitHub, libere o acesso ao repositório (ou a todos) e salve.
 3. Selecione o repositório **chatcapivara1.0** e confira:
-   - **Project name:** `instabot`
    - **Build command:** deixe vazio
    - **Deploy command:** `npx wrangler deploy`
 4. Clique em **Save and Deploy** (ou "Create and deploy").
@@ -32,8 +31,8 @@ O código já está no repositório **`lucaslorentz96-debug/chatcapivara1.0`**.
 > **Já existe um Worker da tentativa que falhou?** Não precisa criar outro: abra esse Worker, vá em **Deployments** (ou Builds) e clique em **Retry build** (Tentar de novo). Ele falhou porque o repositório estava vazio, e agora o código já está lá.
 
 ### 1.3 Abrir o painel e criar a senha
-1. No Worker, copie o endereço que aparece. É algo como `https://instabot.SEU-SUBDOMINIO.workers.dev`.
-2. Abra esse endereço com **`/admin`** no final: `https://instabot.SEU-SUBDOMINIO.workers.dev/admin`
+1. O endereço do seu bot é **`https://chatcapivara1-0.lucaslorentz96.workers.dev`**.
+2. O painel fica em **`https://chatcapivara1-0.lucaslorentz96.workers.dev/admin`**.
 3. No primeiro acesso, o painel pede para **criar a senha**. Crie logo, porque quem abrir o endereço primeiro define a senha.
 4. Vá em **⚙️ Configurações** e deixe essa aba aberta. Você vai copiar dados dela na parte 2.
 

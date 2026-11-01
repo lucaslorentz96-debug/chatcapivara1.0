@@ -2,7 +2,7 @@
 
 Bot de automação para Instagram (comentário → Direct, boas-vindas, palavras-chave, link da bio, stories), usando só a API oficial da Meta. Roda de graça no Cloudflare Workers.
 
-- **Painel:** `https://instabot.SEU-SUBDOMINIO.workers.dev/admin` (a senha é criada no primeiro acesso)
+- **Painel:** `https://chatcapivara1-0.lucaslorentz96.workers.dev/admin` (a senha é criada no primeiro acesso)
 - **Passo a passo:** veja [GUIA.md](GUIA.md)
 
 ## Estrutura

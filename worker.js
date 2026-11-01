@@ -445,7 +445,7 @@ async function subscribeWebhooks(s) {
     if (r.ok) return { ok: true, fields: f };
     last = r;
   }
-  if (fb) return { ok: false, manual: true, error: 'O bot não conseguiu se inscrever sozinho na Página (falta a permissão pages_manage_metadata, e tudo bem). Faça isso na Meta: em "Configuração da API com login do Facebook", no passo de tokens/webhooks, ative a "Assinatura do webhook" da sua Página. Detalhe técnico: ' + explain(last) };
+  if (fb) return { ok: false, manual: true, error: 'Conectado pela Página, mas sem a permissão pages_manage_metadata o Instagram NÃO avisa o bot sobre comentários e mensagens. Solução: conecte pela "Opção A · Conectar com a Meta" (login unificado), que não precisa dessa permissão. Detalhe técnico: ' + (last && last.error ? last.error : '') };
   if (unified) return { ok: false, manual: true, error: 'O bot não conseguiu inscrever a conta sozinho (pode ser normal no login unificado). Confira na Meta, em "3. Configurar webhooks", se os campos comments, messages, messaging_postbacks e messaging_referral estão assinados. Detalhe técnico: ' + explain(last) };
   return { ok: false, error: explain(last) };
 }
@@ -471,7 +471,7 @@ async function connectFacebook(s, token, secret) {
       if (ex.ok && ex.data.access_token) {
         const acc2 = await pageList(ex.data.access_token);
         if (acc2.ok) acc = acc2;
-      } else notes.push('Não consegui transformar em token permanente (' + explain(ex) + '). Confira a chave secreta do aplicativo.');
+      } else notes.push('Não consegui transformar em token permanente (' + explain(ex) + '). A chave secreta não confere com este app: copie a "Chave secreta do aplicativo" em Configurações do app → Básico (não a chave do Instagram).');
     }
     pages = (acc.data.data || []).filter((p) => p.instagram_business_account);
   } else {

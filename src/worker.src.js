@@ -1336,6 +1336,73 @@ async function api(request, env, ctx, url, r, method) {
   if (r === 'refresh-token' && method === 'POST') {
     return json(await refreshToken(env, s, true));
   }
+  if (r === 'diagnose' && method === 'GET') {
+    const checks = [];
+    const add = (ok, label, detail) => checks.push({ ok: !!ok, label, detail: detail || '' });
+    if (!s.ig_token) {
+      add(false, 'Instagram conectado', 'Conecte o Instagram primeiro.');
+      return json({ checks });
+    }
+    const fbMode = s.api_mode === 'fb';
+    const acc = await ig(s, 'GET', '/' + (fbMode ? s.ig_user_id : 'me'), { fields: fbMode ? 'id,username' : 'user_id,username' });
+    add(acc.ok, 'O token acessa a conta @' + s.ig_username, acc.ok ? '' : explain(acc));
+    const saPath = '/' + (fbMode ? s.fb_page_id || s.ig_user_id : 'me') + '/subscribed_apps';
+    const sa = await ig(s, 'GET', saPath);
+    const saList = sa.ok ? sa.data.data || [] : [];
+    add(sa.ok && saList.length > 0, 'A conta está inscrita no app (para receber eventos)', sa.ok ? JSON.stringify(saList) : explain(sa));
+    let appId = s.oauth_app_id;
+    if (!appId) {
+      const a = await ig({ ...s, api_mode: 'fb' }, 'GET', '/app', { fields: 'id' });
+      if (a.ok) appId = a.data.id;
+    }
+    let token = null;
+    if (appId && s.app_secret) {
+      const at = { api_mode: 'fb', ig_token: appId + '|' + s.app_secret };
+      const subs = await ig(at, 'GET', '/' + appId + '/subscriptions');
+      if (subs.ok) {
+        const insta = (subs.data.data || []).find((x) => x.object === 'instagram');
+        const fields = insta ? (insta.fields || []).map((f) => (typeof f === 'string' ? f : f.name)) : [];
+        const cbOk = insta && insta.callback_url === origin + '/webhook';
+        add(insta && insta.active !== false && cbOk, 'Webhook do Instagram configurado no app', insta ? 'URL: ' + insta.callback_url + ' · ativo: ' + insta.active + (cbOk ? '' : ' · ⚠️ a URL deveria ser ' + origin + '/webhook') : 'Nenhum webhook do Instagram configurado no app.');
+        if (insta) {
+          const missing = ['comments', 'messages'].filter((f) => !fields.includes(f));
+          add(!missing.length, 'Campos assinados no webhook', fields.join(', ') + (missing.length ? ' · faltam: ' + missing.join(', ') : ''));
+        }
+      } else add(false, 'Ler a configuração de webhook do app', explain(subs));
+      const dbg = await ig(at, 'GET', '/debug_token', { input_token: s.ig_token });
+      if (dbg.ok && dbg.data && dbg.data.data) {
+        const d = dbg.data.data;
+        token = { type: d.type, is_valid: d.is_valid, expires_at: d.expires_at, scopes: d.scopes || [], app_id: d.app_id };
+        add(d.is_valid, 'Token válido (' + (d.type || '?') + ')', 'Permissões: ' + (d.scopes || []).join(', '));
+      }
+      const app = await ig(at, 'GET', '/' + appId, { fields: 'name,link' });
+      if (app.ok) add(true, 'App da Meta: ' + (app.data.name || appId), 'ID ' + appId);
+    } else add(false, 'Ler a configuração de webhook do app', 'Falta a chave secreta do aplicativo ou o ID do app.');
+    add(!!s.last_event_at, 'Eventos já recebidos do Instagram', s.last_event_at ? 'Último: ' + new Date(Number(s.last_event_at)).toISOString() : 'Nenhum evento chegou até agora.');
+    await log(env, 'info', 'Diagnóstico executado', checks.map((c) => (c.ok ? '✅ ' : '❌ ') + c.label + (c.detail ? ' — ' + c.detail : '')).join('\n'));
+    return json({ checks, token, app_id: appId || null });
+  }
+  if (r === 'fix-webhook' && method === 'POST') {
+    let appId = s.oauth_app_id;
+    if (!appId) {
+      const a = await ig({ ...s, api_mode: 'fb' }, 'GET', '/app', { fields: 'id' });
+      if (a.ok) appId = a.data.id;
+    }
+    if (!appId || !s.app_secret) return json({ error: 'Falta a chave secreta do aplicativo ou o ID do app (conecte pela Opção A).' }, 400);
+    const at = { api_mode: 'fb', ig_token: appId + '|' + s.app_secret };
+    const tries = [SUBSCRIBE_FIELDS, ['comments', 'messages', 'messaging_postbacks'], ['comments', 'messages']];
+    let last;
+    for (const f of tries) {
+      const res = await ig(at, 'POST', '/' + appId + '/subscriptions', { object: 'instagram', callback_url: origin + '/webhook', verify_token: s.verify_token, fields: f.join(','), include_values: 'true' });
+      if (res.ok) {
+        await log(env, 'ok', 'Webhook do Instagram configurado automaticamente: ' + f.join(', '));
+        return json({ ok: true, fields: f });
+      }
+      last = res;
+    }
+    await log(env, 'erro', 'Não consegui configurar o webhook automaticamente', explain(last));
+    return json({ error: explain(last) }, 400);
+  }
   if (r === 'subscribe' && method === 'POST') {
     if (!s.ig_token) return json({ error: 'Conecte o Instagram primeiro.' }, 400);
     const sub = await subscribeWebhooks(s);

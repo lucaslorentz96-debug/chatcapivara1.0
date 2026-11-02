@@ -997,6 +997,7 @@ function renderSettings() {
     ${ck(!!st.webhook_verified_at, 'Webhook verificado pela Meta', st.webhook_verified_at ? 'em ' + fmtDate(st.webhook_verified_at) : 'Faça o passo 2 abaixo no painel da Meta.')}
     ${ck(!!st.last_event_at, 'Recebendo eventos do Instagram', st.last_event_at ? 'último ' + ago(st.last_event_at) : 'Assim que alguém comentar ou mandar mensagem, aparece aqui.')}
     ${ck(st.app_secret_set, 'Chave secreta do app configurada (segurança)', st.app_secret_set ? '' : 'Recomendado — passo 3.')}
+    <div class="row" style="margin-top:12px"><button data-act="diagnose">🔎 Diagnóstico da conexão com a Meta</button></div>
     <div class="row" style="margin-top:14px;justify-content:space-between"><label class="row" style="gap:10px"><label class="switch"><input type="checkbox" data-act-change="bot-toggle" ${st.bot_enabled ? 'checked' : ''}><span></span></label><b>Bot ${st.bot_enabled ? 'ligado' : 'desligado'}</b></label><span class="hint">Desligado = recebe os eventos mas não responde nada.</span></div>
   </section>
 
@@ -1209,6 +1210,26 @@ const ACT = {
       await refreshState();
       renderSettings();
     } catch (e) { if (e.message !== 'auth') toast(e.message, 'err'); el.disabled = false; }
+  },
+  async diagnose(el) {
+    el.disabled = true;
+    el.innerHTML = '<span class="spinner"></span> Verificando com a Meta…';
+    try {
+      const d = await api('diagnose');
+      const m = modal(`<h2>Diagnóstico da conexão</h2>
+        ${d.checks.map((c) => `<div class="check"><span class="st">${c.ok ? '✅' : '❌'}</span><span class="tx">${esc(c.label)}${c.detail ? `<div class="hint" style="word-break:break-all">${esc(c.detail)}</div>` : ''}</span></div>`).join('')}
+        <div class="modal-foot"><button id="fixwh">⚙️ Configurar webhook automaticamente</button><span class="spacer"></span><button class="primary" data-close>Fechar</button></div>`, 'wide');
+      $('#fixwh', m).onclick = async (ev) => {
+        ev.target.disabled = true;
+        try { const r = await api('fix-webhook', { method: 'POST', body: {} }); toast('Webhook configurado ✅ ' + r.fields.join(', '), 'ok'); closeModal(m); }
+        catch (e) { if (e.message !== 'auth') toast(e.message, 'err'); ev.target.disabled = false; }
+      };
+    } catch (e) {
+      if (e.message !== 'auth') toast(e.message, 'err');
+    } finally {
+      el.disabled = false;
+      el.textContent = '🔎 Diagnóstico da conexão com a Meta';
+    }
   },
   async resubscribe(el) {
     el.disabled = true;
